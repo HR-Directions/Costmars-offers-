@@ -28,14 +28,22 @@
 
         /* ==========================================
            إعدادات الطباعة الاحترافية (مقاس 30x20 مم)
+           مخصصة للطابعات الحرارية لضمان الحدة المطلقة
            ========================================== */
         @media print {
             @page { size: 30mm 20mm; margin: 0; }
+            
+            /* إلغاء التنعيم تماماً للطابعات الحرارية لمنع التشتت */
+            * {
+                -webkit-font-smoothing: none !important;
+                font-smooth: never !important;
+                color: #000 !important; /* إجبار اللون الأسود الصريح */
+            }
+
             body, html { margin: 0 !important; padding: 0 !important; background-color: white !important; }
             body > *:not(#print-area) { display: none !important; }
             #print-area { display: block !important; width: 30mm; margin: 0; padding: 0; }
             
-            /* الصفحة الواحدة (الملصق الكامل) */
             .label-page { 
                 width: 30mm; height: 20mm; display: flex; flex-direction: column; 
                 page-break-after: always; page-break-inside: avoid; overflow: hidden; 
@@ -46,29 +54,30 @@
             /* النصف العلوي: الجرعة */
             .dose-half { 
                 width: 30mm; height: 10mm; display: flex; flex-direction: row; 
-                box-sizing: border-box; overflow: hidden; padding: 0.2mm 0; 
+                box-sizing: border-box; overflow: hidden; padding: 0.5mm 0; 
             }
 
             /* النصف السفلي: التواصل والـ QR */
             .contact-half {
                 width: 30mm; height: 10mm; display: flex; flex-direction: row; 
                 box-sizing: border-box; overflow: hidden; padding: 0.5mm;
-                border-top: 1px dashed #000; align-items: center; justify-content: space-between;
+                border-top: 1.5px dashed #000; align-items: center; justify-content: space-between;
             }
 
             .logo-section { 
                 width: 8.5mm; height: 100%; display: flex; flex-direction: column; align-items: center; 
-                justify-content: center; border-left: 1px solid #000; box-sizing: border-box; 
+                justify-content: center; border-left: 1.5px solid #000; box-sizing: border-box; 
                 padding-right: 0.1mm; padding-left: 0.4mm; overflow: hidden; 
             }
 
             .print-logo-img { 
-                width: 100%; height: auto; max-height: 7mm; object-fit: contain; display: block; 
-                filter: grayscale(100%) contrast(1.5) brightness(0.9); margin-bottom: 0.2mm; 
+                width: 100%; height: auto; max-height: 6.5mm; object-fit: contain; display: block; 
+                filter: grayscale(100%) contrast(2) brightness(0.8); margin-bottom: 0.2mm; 
+                image-rendering: pixelated;
             }
 
             .branch-text { 
-                font-size: 4.5pt; font-weight: 900; color: #000; line-height: 1; 
+                font-size: 4.5pt; font-weight: 900; line-height: 1; 
                 text-align: center; white-space: nowrap; margin-top: 0; width: 100%; overflow: hidden; 
             }
 
@@ -77,30 +86,39 @@
                 box-sizing: border-box; padding: 0 0.8mm; overflow: hidden; 
             }
             .dose-text-fluid { 
-                width: 100%; font-size: 6.5pt; font-weight: 900; color: #000; 
+                width: 100%; font-size: 6.5pt; font-weight: 900; 
                 line-height: 1.25; text-align: center; white-space: normal; word-break: break-word; 
                 max-height: 100%; overflow: hidden; 
             }
 
-            /* تنسيقات قسم التواصل */
+            /* تنسيقات قسم التواصل المحسنة */
             .contact-text-box {
-                width: 20mm; height: 100%; display: flex; flex-direction: column;
+                width: 19.5mm; height: 100%; display: flex; flex-direction: column;
                 justify-content: center; align-items: center; text-align: center;
                 padding-left: 0.5mm;
             }
             .contact-msg {
-                font-size: 3.8pt; font-weight: 800; color: #000; line-height: 1.2; 
-                margin-bottom: 0.5mm; white-space: normal;
+                font-size: 4.5pt; /* تم تكبير الخط */
+                font-weight: 900; /* أقصى سماكة */
+                line-height: 1.2; 
+                margin-bottom: 0.5mm; 
+                white-space: normal;
+                letter-spacing: -0.2px; /* تقليل المسافة ليتسع النص */
             }
             .contact-phone {
-                font-size: 5.5pt; font-weight: 900; color: #000; letter-spacing: 0.5px;
+                font-size: 7.5pt; /* تم تكبير الرقم بشكل ملحوظ */
+                font-weight: 900; 
+                letter-spacing: 0.5px;
+                line-height: 1;
             }
             .qr-box {
-                width: 8.5mm; height: 8.5mm; display: flex; align-items: center; justify-content: center;
+                width: 9.5mm; height: 9.5mm; display: flex; align-items: center; justify-content: center;
             }
-            .qr-box img {
-                width: 100%; height: 100%; object-fit: contain;
-                image-rendering: pixelated;
+            /* الحفاظ على المربعات حادة في الكيو ار */
+            .qr-box img, .qr-box canvas {
+                width: 100% !important; height: 100% !important; object-fit: contain;
+                image-rendering: pixelated !important; 
+                image-rendering: crisp-edges !important;
             }
         }
         /* ========================================== */
@@ -363,16 +381,14 @@
         // تم تشفير بيانات القاعدة بواسطة Base64 لعدم عرضها كنص صريح
         const _encConfig = "eyJBcGlLZXkiOiJBSXphU3lDbmQ3OVZna0NGT195U3J0a251WUZOYlJPOUFERENTY0kiLCJhdXRoRG9tYWluIjoibGVhYmwtNzA1YjMuZmlyZWJhc2VhcHAuY29tIiwiZGF0YWJhc2VVUkwiOiJodHRwczovL2xlYWJsLTcwNWIzLWRlZmF1bHQtcnRkYi5maXJlYmFzZWlvLmNvbSIsInByb2plY3RJZCI6ImxlYWJsLTcwNWIzIiwic3RvcmFnZUJ1Y2tldCI6ImxlYWJsLTcwNWIzLmZpcmViYXNlc3RvcmFnZS5hcHAiLCJtZXNzYWdpbmdTZW5kZXJJZCI6IjEwNjMwNDE2OTk2NDAiLCJhcHBJZCI6IjE6MTA2MzA0MTY5OTY0MDp3ZWI6NzE4MmE1OTE2M2JlZWUwM2I1N2JjZCJ9";
         
-        // استعادة البيانات المشفّرة
         const firebaseConfig = JSON.parse(atob(_encConfig));
-        // إعادة تسمية المفتاح لأن التشفير حول أول حرف لـ Capital بناءً على النمط
         firebaseConfig.apiKey = firebaseConfig.ApiKey; 
         delete firebaseConfig.ApiKey;
 
         window.dosagesArray = [];
         window.branches = JSON.parse(localStorage.getItem('pharmacy_branches')) || [{ id: '1', name: "الفرع الرئيسي", logo: "", whatsapp: "" }];
         window.activeBranchId = localStorage.getItem('pharmacy_active_branch') || '1';
-        window.editingBranchId = null; // متغير لحالة التعديل
+        window.editingBranchId = null;
         
         let db;
         const dbPath = 'pharmacy_settings/branches_data';
@@ -512,7 +528,6 @@
             if(!name) { window.showToast("يرجى إدخال اسم الفرع", true); return; }
 
             if(window.editingBranchId) {
-                // وضع التعديل
                 const idx = window.branches.findIndex(b => b.id === window.editingBranchId);
                 if(idx !== -1) {
                     window.branches[idx].name = name;
@@ -520,9 +535,8 @@
                     window.branches[idx].whatsapp = whatsapp;
                 }
                 window.showToast("تم تحديث بيانات الفرع");
-                window.cancelEdit(); // لتفريغ الحقول وإعادة الزر لوضعه الطبيعي
+                window.cancelEdit(); 
             } else {
-                // وضع الإضافة
                 const newBranch = { id: Date.now().toString(), name, logo, whatsapp };
                 window.branches.push(newBranch);
                 window.activeBranchId = newBranch.id;
@@ -728,11 +742,15 @@
 
             const activeBranch = window.branches.find(b => b.id === window.activeBranchId) || {name: "بدون", logo: "", whatsapp: ""};
 
-            // تهيئة رابط الواتساب (تنظيف الرقم من الفواصل والمسافات)
-            const cleanWaNumber = activeBranch.whatsapp ? activeBranch.whatsapp.replace(/\D/g,'') : '';
+            // معالجة ذكية لرقم الواتساب ليفتح الرابط بشكل صحيح دائماً
+            let cleanWaNumber = activeBranch.whatsapp ? activeBranch.whatsapp.replace(/\D/g,'') : '';
+            // إضافة مفتاح مصر (2) إذا كان الرقم يبدأ بـ 01 وطوله 11 رقم لضمان عمل الكيو ار
+            if (cleanWaNumber.startsWith('01') && cleanWaNumber.length === 11) {
+                cleanWaNumber = '2' + cleanWaNumber;
+            }
             const waLink = cleanWaNumber ? `https://wa.me/${cleanWaNumber}` : '';
 
-            // 1. عرض بطاقات الواجهة (العرض في الشاشة)
+            // 1. عرض بطاقات الواجهة
             window.dosagesArray.forEach((item) => {
                 let combinedText = "";
                 if (item.line1 && item.line2) combinedText = `${item.line1}، ${item.line2}`;
@@ -756,7 +774,7 @@
                 list.appendChild(card);
             });
 
-            // 2. إعداد صفحات الطباعة (صفحة واحدة لكل جرعة)
+            // 2. إعداد صفحات الطباعة
             window.dosagesArray.forEach((item, index) => {
                 let combinedText = "";
                 if (item.line1 && item.line2) combinedText = `${item.line1}، ${item.line2}`;
@@ -766,7 +784,7 @@
                 const printPage = document.createElement('div');
                 printPage.className = "label-page";
 
-                const qrBoxId = `qr-code-${item.id}-${index}`; // تعريف ID فريد للكيو ار
+                const qrBoxId = `qr-code-${item.id}-${index}`; 
 
                 printPage.innerHTML = `
                     <div class="dose-half">
@@ -780,7 +798,8 @@
                     </div>
                     <div class="contact-half">
                         <div class="contact-text-box">
-                            <div class="contact-msg">للاستفسار والتواصل يرجى الاتصال على الرقم التالي:</div>
+                            <!-- تقسيم الجملة على سطرين لزيادة وضوح وحجم الخط -->
+                            <div class="contact-msg">للاستفسار والتواصل<br>يرجى الاتصال على:</div>
                             <div class="contact-phone" dir="ltr">${activeBranch.whatsapp || '---'}</div>
                         </div>
                         <div class="qr-box" id="${qrBoxId}"></div>
@@ -789,18 +808,18 @@
                 
                 printArea.appendChild(printPage);
 
-                // توليد QR Code مباشرة بعد إضافة العنصر للـ DOM
+                // توليد الـ QR Code بإعدادات تضمن أقل كثافة ممكنة (CorrectLevel.L)
                 if(waLink) {
                     new QRCode(document.getElementById(qrBoxId), {
                         text: waLink,
-                        width: 40, // حجم مناسب للدقة الحرارية
-                        height: 40,
+                        width: 64, // تكبير دقة المربعات نفسها لتجنب التشتت
+                        height: 64,
                         colorDark : "#000000",
                         colorLight : "#ffffff",
-                        correctLevel : QRCode.CorrectLevel.M // تصحيح الخطأ المتوسط ممتاز للقراءة بالكاميرا
+                        correctLevel : QRCode.CorrectLevel.L // CRITICAL: أقل مستوى تعقيد ليكون الكود بسيطاً وكبير المربعات
                     });
                 } else {
-                    document.getElementById(qrBoxId).innerHTML = '<span style="font-size:4pt; text-align:center;">لا يوجد<br>رقم</span>';
+                    document.getElementById(qrBoxId).innerHTML = '<span style="font-size:4pt; text-align:center; font-weight:bold;">لا يوجد<br>رقم</span>';
                 }
             });
         }
@@ -823,5 +842,3 @@
     </script>
 </body>
 </html>
-
-
