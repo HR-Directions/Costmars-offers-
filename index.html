@@ -252,6 +252,7 @@
                             <button onclick="switchAdminTab('branchesSubTab')" id="btn-branchesSubTab" class="admin-nav-btn w-full text-right px-6 py-4 font-bold border-b border-gray-100 text-gray-600 hover:bg-gray-50 transition-colors"><i class="fa-solid fa-store ml-2 w-5 text-center"></i>الفروع</button>
                             <button onclick="switchAdminTab('delegatesSubTab')" id="btn-delegatesSubTab" class="admin-nav-btn w-full text-right px-6 py-4 font-bold border-b border-gray-100 text-gray-600 hover:bg-gray-50 transition-colors"><i class="fa-solid fa-users ml-2 w-5 text-center"></i>المناديب</button>
                             <button onclick="switchAdminTab('devicesSubTab'); loadDevices();" id="btn-devicesSubTab" class="admin-nav-btn w-full text-right px-6 py-4 font-bold border-b border-gray-100 text-gray-600 hover:bg-gray-50 transition-colors flex justify-between items-center"><span class="flex items-center"><i class="fa-solid fa-laptop-medical ml-2 w-5 text-center"></i>أجهزة الانضمام</span><span id="pendingDevicesBadge" class="hidden bg-red-500 text-white text-xs px-2 py-0.5 rounded-full animate-pulse">!</span></button>
+                            <button onclick="switchAdminTab('notificationsSubTab')" id="btn-notificationsSubTab" class="admin-nav-btn w-full text-right px-6 py-4 font-bold border-b border-gray-100 text-gray-600 hover:bg-gray-50 transition-colors"><i class="fa-solid fa-bell ml-2 w-5 text-center text-red-500"></i>الإعلامات والتحديثات</button>
                             <button onclick="switchAdminTab('trackingSubTab'); loadLogs();" id="btn-trackingSubTab" class="admin-nav-btn w-full text-right px-6 py-4 font-bold text-gray-600 hover:bg-gray-50 transition-colors"><i class="fa-solid fa-eye ml-2 w-5 text-center"></i>التتبع وسجل النشاط</button>
                         </div>
                     </div>
@@ -520,6 +521,25 @@
         </div>
     </div>
 
+    <div id="notificationsSubTab" class="sub-tab-content">
+    <div class="bg-gradient-to-r from-amber-50 to-white rounded-xl shadow-sm p-6 border border-amber-100 mb-6 relative overflow-hidden">
+        <i class="fa-solid fa-arrows-rotate absolute -left-4 -bottom-4 text-6xl opacity-10 text-amber-500"></i>
+        <h2 class="text-xl font-bold text-gray-800 mb-2 relative z-10"><i class="fa-solid fa-rotate text-amber-500 ml-2"></i>فرض تحديث النظام لجميع الأجهزة</h2>
+        <p class="text-sm text-gray-600 mb-5 font-semibold relative z-10">استخدم هذا الزر بعد قيامك بتطوير الكود أو إضافة ميزات جديدة، لإجبار جميع الأجهزة النشطة حالياً (فروع أو مناديب) على عمل إعاده تحميل (Refresh) للصفحة لتطبيق التحديث الجديد فوراً.</p>
+        <button onclick="triggerSystemReload()" class="relative z-10 bg-amber-500 text-white px-6 py-3 rounded-lg font-bold hover:bg-amber-600 transition shadow-md flex items-center gap-2 transform hover:scale-105 active:scale-95"><i class="fa-solid fa-arrows-rotate"></i> إرسال أمر التحديث الإجباري الآن</button>
+    </div>
+
+    <div class="bg-gradient-to-r from-red-50 to-white rounded-xl shadow-sm p-6 border border-red-100 mb-6 relative overflow-hidden">
+        <i class="fa-solid fa-bullhorn absolute -left-4 -bottom-4 text-6xl opacity-10 text-red-500"></i>
+        <h2 class="text-xl font-bold text-gray-800 mb-2 relative z-10"><i class="fa-solid fa-bullhorn text-red-500 ml-2"></i>إرسال تنبيه هام للأجهزة</h2>
+        <p class="text-sm text-gray-600 mb-5 font-semibold relative z-10">سيظهر هذا التنبيه كنافذة منبثقة إجبارية فوق الشاشة لجميع الأجهزة النشطة مصحوباً بصوت إنذار تحذيري.</p>
+        <form onsubmit="sendSystemAlert(event)" class="space-y-4 relative z-10">
+            <textarea id="systemAlertText" required rows="3" placeholder="اكتب رسالة التنبيه هنا..." class="w-full px-4 py-3 border border-red-200 rounded-xl outline-none focus:border-red-500 focus:ring-2 focus:ring-red-200 transition font-bold shadow-inner"></textarea>
+            <button type="submit" class="bg-red-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-red-700 transition shadow-md flex items-center gap-2 transform hover:scale-105 active:scale-95"><i class="fa-solid fa-paper-plane"></i> إرسال التنبيه وإطلاق الإنذار الآن</button>
+        </form>
+    </div>
+</div>
+
     <div id="weightModal" class="modal">
         <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-xs text-center transform transition-all">
             <div class="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-3">
@@ -583,6 +603,8 @@
         
         let recordToChangeDelegate = null; 
         let changeDelegateDate = null;
+        let localReloadSignal = 0;
+let localAlertTimestamp = 0;
         
         const racingBikeIcon = `<svg class="w-5 h-5 inline text-current mr-1 drop-shadow-sm" viewBox="0 0 512 512" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M400 320c-44.2 0-80 35.8-80 80s35.8 80 80 80 80-35.8 80-80-35.8-80-80-80zm0 112c-17.6 0-32-14.4-32-32s14.4-32 32-32 32 14.4 32 32-14.4 32-32 32zM112 320c-44.2 0-80 35.8-80 80s35.8 80 80 80 80-35.8 80-80-35.8-80-80-80zm0 112c-17.6 0-32-14.4-32-32s14.4-32 32-32 32 14.4 32 32-14.4 32-32 32zm225.4-181.9l-58.6-58.6c-8.9-8.9-22-12.7-34.4-9.9L164.7 203.2c-12.2 2.8-21.7 12.3-24.5 24.5l-21.6 95.7c-2.3 10.3 5.4 19.9 15.8 19.9h32c8.8 0 16-7.2 16-16v-68.5l67-15.1 46.2 46.2c6.2 6.2 16.4 6.2 22.6 0l35.4-35.4c6.1-6.2 6.1-16.4-.2-22.6z"/></svg>`;
 
@@ -864,6 +886,13 @@
             document.getElementById('loginScreen').classList.add('hidden');
             document.getElementById('appContainer').classList.remove('hidden');
             document.getElementById('appContainer').classList.add('flex');
+            // جلب حالة التحديثات والتنبيهات المبدئية
+fetch(`${DB_URL}system_alerts.json`).then(r => r.json()).then(data => {
+    if(data) {
+        localReloadSignal = data.lastReloadSignal || 0;
+        localAlertTimestamp = data.latestMessage?.timestamp || 0;
+    }
+}).catch(e => console.log(e));
             
             const roleBadge = currentUser.role === 'admin' ? '<i class="fa-solid fa-crown text-amber-500 mr-1"></i> الإدارة' : '<i class="fa-solid fa-store text-blue-500 mr-1"></i> فرع';
             let extraInfo = '';
@@ -932,6 +961,23 @@
                 }
             }, 3000);
         }
+        // --- داخل setInterval ذو الـ 3000 ملي ثانية ---
+try {
+    const alertsRes = await fetch(`${DB_URL}system_alerts.json`);
+    const alertsData = await alertsRes.json();
+    if (alertsData) {
+        // التحقق من وجود أمر إعادة تحميل إجباري
+        if (localReloadSignal > 0 && alertsData.lastReloadSignal > localReloadSignal) {
+            document.getElementById('forceReloadModal').classList.add('active');
+            playWarningSound(); // إطلاق صوت انتباه
+        }
+        // التحقق من وجود تنبيه نصي
+        if (localAlertTimestamp > 0 && alertsData.latestMessage?.timestamp > localAlertTimestamp) {
+            localAlertTimestamp = alertsData.latestMessage.timestamp; // تحديث الذاكرة فوراً لمنع التكرار
+            showSystemAlertModal(alertsData.latestMessage.text);
+        }
+    }
+} catch(e) {}
 
         function logout() {
             sessionStorage.removeItem('scissorsUser');
@@ -2088,6 +2134,109 @@
 
             window.print();
         }
+
+        // --- دوال الإشعارات والتحديث الإجباري ---
+
+async function triggerSystemReload() {
+    if(!confirm("تحذير: هذا سيجبر جميع الأجهزة على مستوى النظام على إعادة تحميل الصفحة فوراً. هل أنت متأكد؟")) return;
+    try {
+        await fetch(`${DB_URL}system_alerts.json`, {
+            method: 'PATCH',
+            body: JSON.stringify({ lastReloadSignal: Date.now() })
+        });
+        showToast("تم إرسال أمر التحديث الإجباري بنجاح لجميع الأجهزة", "success");
+        logActivity('edit', 'أرسل أمر تحديث إجباري للنظام لجميع الأجهزة');
+    } catch(e) {
+        showToast("حدث خطأ أثناء الإرسال", "error");
+    }
+}
+
+async function sendSystemAlert(e) {
+    e.preventDefault();
+    const text = document.getElementById('systemAlertText').value.trim();
+    if(!confirm("هل أنت متأكد من إطلاق هذا الإنذار العام للجميع؟")) return;
+    
+    try {
+        await fetch(`${DB_URL}system_alerts.json`, {
+            method: 'PATCH',
+            body: JSON.stringify({
+                latestMessage: { text: text, timestamp: Date.now() }
+            })
+        });
+        document.getElementById('systemAlertText').value = '';
+        showToast("تم إطلاق الإنذار بنجاح", "success");
+        logActivity('edit', 'أرسل تنبيهاً عاماً للأجهزة: ' + text);
+    } catch(e) {
+        showToast("حدث خطأ أثناء الإرسال", "error");
+    }
+}
+
+function showSystemAlertModal(text) {
+    document.getElementById('systemAlertContent').textContent = text;
+    document.getElementById('systemAlertModal').classList.add('active');
+    playWarningSound();
+}
+
+function closeSystemAlert() {
+    document.getElementById('systemAlertModal').classList.remove('active');
+}
+
+function playWarningSound() {
+    try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // النغمة الأولى (صعود حاد)
+        const osc1 = ctx.createOscillator();
+        const gain1 = ctx.createGain();
+        osc1.type = 'square';
+        osc1.frequency.setValueAtTime(400, ctx.currentTime);
+        osc1.frequency.linearRampToValueAtTime(800, ctx.currentTime + 0.2);
+        gain1.gain.setValueAtTime(0, ctx.currentTime);
+        gain1.gain.linearRampToValueAtTime(0.8, ctx.currentTime + 0.1);
+        gain1.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.3);
+        osc1.connect(gain1); gain1.connect(ctx.destination);
+        osc1.start(ctx.currentTime); osc1.stop(ctx.currentTime + 0.3);
+
+        // النغمة الثانية (نزول حاد)
+        const osc2 = ctx.createOscillator();
+        const gain2 = ctx.createGain();
+        osc2.type = 'square';
+        osc2.frequency.setValueAtTime(800, ctx.currentTime + 0.3);
+        osc2.frequency.linearRampToValueAtTime(400, ctx.currentTime + 0.5);
+        gain2.gain.setValueAtTime(0, ctx.currentTime + 0.3);
+        gain2.gain.linearRampToValueAtTime(0.8, ctx.currentTime + 0.4);
+        gain2.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.6);
+        osc2.connect(gain2); gain2.connect(ctx.destination);
+        osc2.start(ctx.currentTime + 0.3); osc2.stop(ctx.currentTime + 0.6);
+        
+    } catch(e) {}
+}
     </script>
+    <div id="forceReloadModal" class="modal" style="backdrop-filter: blur(10px) brightness(0.5); z-index: 99999;">
+    <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-sm text-center transform transition-all border-t-8 border-amber-500">
+        <div class="w-20 h-20 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-5 animate-spin" style="animation-duration: 3s;">
+            <i class="fa-solid fa-arrows-rotate text-5xl text-amber-500"></i>
+        </div>
+        <h2 class="text-2xl font-black text-gray-800 mb-2">تحديث جديد متوفر</h2>
+        <p class="text-sm font-bold text-gray-500 mb-6">قامت الإدارة بإصدار تحديث برمجي جديد للنظام للتو.<br>يرجى النقر على الزر أدناه لتطبيق التحديث.</p>
+        <button onclick="window.location.reload(true)" class="w-full bg-amber-500 text-white py-4 rounded-xl font-bold hover:bg-amber-600 transition shadow-lg text-lg animate-pulse flex items-center justify-center gap-2"><i class="fa-solid fa-bolt"></i> تحديث الصفحة الآن</button>
+    </div>
+</div>
+
+<div id="systemAlertModal" class="modal" style="z-index: 99998;">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md transform transition-all overflow-hidden border border-red-100">
+        <div class="bg-gradient-to-r from-red-600 to-red-500 p-5 flex justify-between items-center text-white shadow-md relative overflow-hidden">
+            <div class="absolute inset-0 bg-black opacity-10 animate-pulse"></div>
+            <h2 class="text-xl font-black flex items-center relative z-10"><i class="fa-solid fa-triangle-exclamation ml-2 text-2xl"></i> تنبيه إداري هام</h2>
+            <button onclick="closeSystemAlert()" class="relative z-10 text-white hover:text-red-200 transition-colors bg-white/20 hover:bg-white/30 rounded-full w-8 h-8 flex items-center justify-center"><i class="fa-solid fa-xmark text-lg"></i></button>
+        </div>
+        <div class="p-6 text-center">
+            <div class="bg-red-50 rounded-xl p-4 mb-6 border border-red-100">
+                <p id="systemAlertContent" class="text-lg font-bold text-red-800 leading-relaxed whitespace-pre-wrap"></p>
+            </div>
+            <button onclick="closeSystemAlert()" class="w-full bg-gray-100 text-gray-700 py-3 rounded-xl font-bold hover:bg-gray-200 transition shadow-sm">استلمت، إغلاق الرسالة</button>
+        </div>
+    </div>
+</div>
 </body>
 </html>
