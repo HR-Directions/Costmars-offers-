@@ -942,26 +942,7 @@ fetch(`${DB_URL}system_alerts.json`).then(r => r.json()).then(data => {
                 checkOverdueOrdersBackground();
                 updateDelegatesOutStatus();
             }, 60000);
-
-            setInterval(async () => {
-                const dateStr = document.getElementById('recordDate').value;
-                const isAnyModalOpen = document.querySelectorAll('.modal.active').length > 0;
-                
-                if(!isAnyModalOpen && document.getElementById('mainTab').classList.contains('active')) {
-                    try {
-                        const data = await getDayData(dateStr, true);
-                        if (JSON.stringify(currentRecords[dateStr] || {}) !== JSON.stringify(data || {})) {
-                            currentRecords[dateStr] = data || {};
-                            const searchTerm = document.getElementById('mainSearchInput').value.trim().toLowerCase();
-                            renderRecordsTable(dateStr, searchTerm);
-                            renderBranchButtons();
-                            updateDelegatesOutStatus();
-                        }
-                    } catch(e) {}
-                }
-            }, 3000);
-        }
-        // --- داخل setInterval ذو الـ 3000 ملي ثانية ---
+              // --- داخل setInterval ذو الـ 3000 ملي ثانية ---
 try {
     const alertsRes = await fetch(`${DB_URL}system_alerts.json`);
     const alertsData = await alertsRes.json();
@@ -1002,6 +983,26 @@ try {
                 }
             } catch(e) {}
         }
+
+            setInterval(async () => {
+                const dateStr = document.getElementById('recordDate').value;
+                const isAnyModalOpen = document.querySelectorAll('.modal.active').length > 0;
+                
+                if(!isAnyModalOpen && document.getElementById('mainTab').classList.contains('active')) {
+                    try {
+                        const data = await getDayData(dateStr, true);
+                        if (JSON.stringify(currentRecords[dateStr] || {}) !== JSON.stringify(data || {})) {
+                            currentRecords[dateStr] = data || {};
+                            const searchTerm = document.getElementById('mainSearchInput').value.trim().toLowerCase();
+                            renderRecordsTable(dateStr, searchTerm);
+                            renderBranchButtons();
+                            updateDelegatesOutStatus();
+                        }
+                    } catch(e) {}
+                }
+            }, 3000);
+        }
+      
 
         async function checkPendingDevicesBackground() {
             try {
