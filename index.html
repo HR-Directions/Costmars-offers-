@@ -1042,10 +1042,10 @@
                             localAlertTimestamp = alertsData.latestMessage.timestamp;
                             showSystemAlertModal(alertsData.latestMessage.text);
                         }
-                    }
                 } catch(e) {}
             }, 3000);
 
+        } // <--- هذا هو القوس المفقود الذي يجب إضافته هنا لإغلاق دالة startApp
             
         function logout() {
             sessionStorage.removeItem('scissorsUser');
