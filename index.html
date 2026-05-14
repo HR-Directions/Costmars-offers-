@@ -68,6 +68,24 @@
             .print-header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 10px; }
             .print-footer { text-align: center; border-top: 2px solid #000; padding-top: 10px; margin-top: 10px; font-weight: bold; font-size: 14px;}
         }
+        /* إصلاحات المود الليلي */
+body.dark-mode { background-color: #0f172a !important; color: #f8fafc !important; }
+body.dark-mode .bg-white, body.dark-mode .dark-mode-surface { background-color: #1e293b !important; border-color: #334155 !important; color: #f8fafc !important; }
+body.dark-mode .dark-mode-item { background-color: #334155 !important; border-color: #475569 !important; }
+body.dark-mode h1, body.dark-mode h2, body.dark-mode h3, body.dark-mode .dark-text-title { color: #f1f5f9 !important; }
+body.dark-mode p, body.dark-mode span:not(.text-white) { color: #cbd5e1 !important; }
+body.dark-mode input, body.dark-mode select { background-color: #1e293b !important; border-color: #475569 !important; color: #fff !important; }
+
+/* إصلاح نافذة الإعدادات لتظهر وتختفي */
+.modal { 
+    display: none; 
+    position: fixed; 
+    top: 0; left: 0; width: 100%; height: 100%; 
+    background: rgba(0,0,0,0.6); 
+    z-index: 9999; 
+    align-items: center; justify-content: center; 
+}
+.modal.active { display: flex !important; }
     </style>
 </head>
 <body class="text-gray-800 h-screen flex flex-col">
@@ -2387,97 +2405,65 @@
             } catch(e) {}
         }
 
-// وظيفة فتح النافذة وضبط حالة الأزرار بناءً على الوضع الحالي
+        // دالة فتح نافذة الإعدادات
 function openSettingsModal() {
     const modal = document.getElementById('settingsModal');
-    modal.classList.add('active');
-    
-    // تحديث حالة مفتاح التبديل بناءً على ما هو مطبق حالياً في الـ Body
-    document.getElementById('darkModeToggle').checked = document.body.classList.contains('dark-mode');
-    
-    // تحديث حالة اللغة بناءً على اتجاه الصفحة
-    document.getElementById('languageSelect').value = document.documentElement.dir === 'ltr' ? 'en' : 'ar';
+    if (modal) {
+        modal.classList.add('active');
+        // مزامنة حالة زر التبديل مع الوضع الحالي للجسم
+        document.getElementById('darkModeToggle').checked = document.body.classList.contains('dark-mode');
+    }
 }
 
-// وظيفة المظهر (تغيير فوري وتلقائي عند الضغط)
+// دالة إغلاق النافذة (إصلاح زر X)
+function closeSettingsModal() {
+    const modal = document.getElementById('settingsModal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
+}
+
+// دالة تبديل الوضع الليلي (إصلاح التغيير الفوري)
 function toggleTheme() {
     const isDark = document.getElementById('darkModeToggle').checked;
     if(isDark) {
         document.body.classList.add('dark-mode');
         localStorage.setItem('scissors_theme', 'dark');
-        showToast("تم تفعيل الوضع الليلي", "success");
     } else {
         document.body.classList.remove('dark-mode');
         localStorage.setItem('scissors_theme', 'light');
-        showToast("تم تفعيل الوضع المضيء", "success");
     }
 }
 
-// وظيفة اللغة (تغيير فوري وتلقائي عند الاختيار)
+// دالة تبديل اللغة والاتجاه
 function toggleLanguage() {
     const lang = document.getElementById('languageSelect').value;
     if (lang === 'en') {
         document.documentElement.dir = 'ltr';
-        document.documentElement.lang = 'en';
-        localStorage.setItem('scissors_lang', 'en');
-        showToast("Layout changed to LTR", "info");
+        document.body.style.textAlign = 'left';
     } else {
         document.documentElement.dir = 'rtl';
-        document.documentElement.lang = 'ar';
-        localStorage.setItem('scissors_lang', 'ar');
-        showToast("تم تغيير الاتجاه للعربية", "info");
+        document.body.style.textAlign = 'right';
     }
+    localStorage.setItem('scissors_lang', lang);
 }
 
-// وظيفة تغيير كلمة المرور (مستقلة تماماً، لا تُستدعى إلا بضغط زر الفورم)
-async function handlePasswordChange(e) {
-    e.preventDefault();
-    
-    const currentPass = document.getElementById('currentPass').value;
-    const newPass = document.getElementById('newPass').value;
-    const confirmPass = document.getElementById('confirmNewPass').value;
-
-    if (newPass.length < 4) {
-        return showToast("كلمة المرور ضعيفة جداً", "error");
+// تشغيل الإعدادات المحفوظة فور تحميل الصفحة
+(function() {
+    if (localStorage.getItem('scissors_theme') === 'dark') {
+        document.body.classList.add('dark-mode');
     }
-
-    if (newPass !== confirmPass) {
-        return showToast("كلمات المرور الجديدة غير متطابقة", "error");
+    const savedLang = localStorage.getItem('scissors_lang');
+    if (savedLang === 'en') {
+        document.documentElement.dir = 'ltr';
     }
+})();
 
-    const btn = document.getElementById('btnChangePass');
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin ml-2"></i> جاري الحفظ...';
-    btn.disabled = true;
-
-    try {
-        const endpoint = currentUser.role === 'admin' ? 'admins' : 'branches';
-        const res = await fetch(`${DB_URL}${endpoint}/${currentUser.id}.json`);
-        const userData = await res.json();
-
-        if (!userData || userData.password !== currentPass) {
-            showToast("كلمة المرور الحالية غير صحيحة", "error");
-            btn.innerHTML = 'تحديث كلمة المرور فقط';
-            btn.disabled = false;
-            return;
-        }
-
-        // التحديث في Firebase
-        await fetch(`${DB_URL}${endpoint}/${currentUser.id}.json`, {
-            method: 'PATCH',
-            body: JSON.stringify({ password: newPass })
-        });
-
-        showToast("تم التغيير! سيتم الخروج للأمان..", "success");
-        logActivity('edit', 'تغيير كلمة المرور الشخصية');
-
-        setTimeout(() => {
-            logout(); // تسجيل الخروج الإجباري للأمان بعد التغيير
-        }, 1500);
-
-    } catch (err) {
-        showToast("خطأ في الاتصال بالسيرفر", "error");
-        btn.innerHTML = 'تحديث كلمة المرور فقط';
-        btn.disabled = false;
+// إغلاق النافذة عند الضغط خارجها
+window.onclick = function(event) {
+    const modal = document.getElementById('settingsModal');
+    if (event.target == modal) {
+        closeSettingsModal();
     }
 }
 
