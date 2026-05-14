@@ -688,50 +688,7 @@ body.dark-mode td {
             </div>
         </div>
     </div>
-  <div id="settingsModal" class="modal">
-    <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md border border-gray-100 dark:border-gray-700 transition-all">
-        <div class="flex justify-between items-center mb-6">
-            <h2 class="text-2xl font-bold text-gray-800 dark-text-white">الإعدادات</h2>
-            <div onclick="closeSettingsModal()" class="close-btn text-gray-400">
-                <i class="fa-solid fa-circle-xmark text-2xl"></i>
-            </div>
-        </div>
-        </div>
-</div>
-        
-        <div class="p-6 space-y-6">
-            <section class="border-b pb-4 border-gray-100">
-                <h3 class="text-sm font-bold text-gray-400 mb-3 uppercase tracking-wider">المظهر واللغة</h3>
-                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl dark-mode-item mb-3">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 bg-indigo-100 text-indigo-600 rounded-lg flex items-center justify-center">
-                            <i class="fa-solid fa-moon"></i>
-                        </div>
-                        <div>
-                            <p class="font-bold text-gray-800 dark-text-title">الوضع الليلي</p>
-                            <p class="text-xs text-gray-500">تفعيل المظهر الداكن</p>
-                        </div>
-                    </div>
-                    <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" id="darkModeToggle" class="sr-only peer" onchange="toggleTheme()">
-                        <div class="w-12 h-6 bg-gray-300 rounded-full peer peer-checked:bg-secondary after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-6"></div>
-                    </label>
-                </div>
-
-                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl dark-mode-item">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-lg flex items-center justify-center">
-                            <i class="fa-solid fa-language"></i>
-                        </div>
-                        <div>
-                            <p class="font-bold text-gray-800 dark-text-title">اللغة</p>
-                        </div>
-                    </div>
-                    <select id="languageSelect" onchange="toggleLanguage()" class="px-3 py-1.5 border rounded-lg bg-white text-gray-800 font-bold text-sm outline-none focus:ring-2 focus:ring-secondary">
-                        <option value="ar">العربية (RTL)</option>
-                        <option value="en">English (LTR)</option>
-                    </select>
-                </div>
+ </div>
             </section>
 
             <section>
@@ -753,7 +710,112 @@ body.dark-mode td {
         </div>
     </div>
 </div>
+<div id="settingsModal" class="modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 10000; align-items: center; justify-content: center; backdrop-filter: blur(8px);">
+    <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md border border-gray-100 dark-mode-surface transition-all overflow-hidden" style="position: relative;">
+        
+        <div class="flex justify-between items-center mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 dark-text-white flex items-center">
+                <i class="fa-solid fa-gears ml-3 text-primary"></i> إعدادات النظام
+            </h2>
+            <button type="button" onclick="closeSettingsModal()" class="text-gray-400 hover:text-red-500 transition-colors">
+                <i class="fa-solid fa-circle-xmark text-3xl"></i>
+            </button>
+        </div>
 
+        <div class="space-y-6">
+            <div class="flex justify-between items-center p-4 rounded-xl bg-gray-50 dark-mode-item border border-gray-100">
+                <div>
+                    <span class="block font-bold text-gray-800 dark-text-white">الوضع الليلي</span>
+                    <span class="text-xs text-gray-500">تحويل الواجهة للون الداكن</span>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="darkModeToggle" class="sr-only peer" onchange="toggleTheme()">
+                    <div class="w-12 h-6 bg-gray-300 rounded-full peer peer-checked:bg-primary after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:-translate-x-6"></div>
+                </label>
+            </div>
+
+            <div class="flex justify-between items-center p-4 rounded-xl bg-gray-50 dark-mode-item border border-gray-100">
+                <div>
+                    <span class="block font-bold text-gray-800 dark-text-white">اللغة والاتجاه</span>
+                </div>
+                <select id="languageSelect" onchange="toggleLanguage()" class="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary focus:border-primary p-2 dark-mode-input">
+                    <option value="ar">العربية (RTL)</option>
+                    <option value="en">English (LTR)</option>
+                </select>
+            </div>
+
+            <div class="pt-6 border-t border-gray-100 dark-mode-border">
+                <h3 class="font-bold text-gray-800 dark-text-white mb-4 flex items-center">
+                    <i class="fa-solid fa-key ml-2 text-primary"></i> تغيير كلمة المرور
+                </h3>
+                <div class="space-y-3">
+                    <input type="password" id="currentPass" placeholder="كلمة المرور الحالية" class="w-full p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary outline-none dark-mode-input">
+                    <input type="password" id="newPass" placeholder="كلمة المرور الجديدة" class="w-full p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-primary outline-none dark-mode-input">
+                    <button onclick="handlePasswordChange(event)" class="w-full bg-primary text-white py-3 rounded-lg font-bold hover:bg-blue-800 transition-all shadow-lg active:scale-95">
+                        حفظ التغييرات وتسجيل الخروج
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* الفئات التي تضمن تحويل الأسود لابيض والعكس */
+    body.dark-mode { background-color: #0f172a !important; color: #f1f5f9 !important; }
+    
+    /* تحويل البطاقات والنوافذ */
+    body.dark-mode .dark-mode-surface { background-color: #1e293b !important; border-color: #334155 !important; }
+    body.dark-mode .dark-mode-item { background-color: #0f172a !important; border-color: #334155 !important; }
+    
+    /* تحويل النصوص: الأسود يتحول لابيض */
+    body.dark-mode .text-gray-800, 
+    body.dark-mode .text-gray-900, 
+    body.dark-mode .dark-text-white,
+    body.dark-mode h1, body.dark-mode h2, body.dark-mode h3 { color: #ffffff !important; }
+    
+    /* تحويل المدخلات */
+    body.dark-mode .dark-mode-input { background-color: #1e293b !important; color: #ffffff !important; border-color: #334155 !important; }
+    
+    /* إصلاح ظهور النافذة */
+    .modal.active { display: flex !important; }
+</style>
+
+<script>
+    function openSettingsModal() {
+        const modal = document.getElementById('settingsModal');
+        modal.classList.add('active');
+        document.getElementById('darkModeToggle').checked = document.body.classList.contains('dark-mode');
+    }
+
+    function closeSettingsModal() {
+        document.getElementById('settingsModal').classList.remove('active');
+    }
+
+    function toggleTheme() {
+        const isDark = document.getElementById('darkModeToggle').checked;
+        if (isDark) {
+            document.body.classList.add('dark-mode');
+            localStorage.setItem('user_theme', 'dark');
+        } else {
+            document.body.classList.remove('dark-mode');
+            localStorage.setItem('user_theme', 'light');
+        }
+    }
+
+    function toggleLanguage() {
+        const lang = document.getElementById('languageSelect').value;
+        document.documentElement.dir = (lang === 'en') ? 'ltr' : 'rtl';
+        localStorage.setItem('user_lang', lang);
+        showToast("سيتم تطبيق تغيير الاتجاه الآن", "info");
+    }
+
+    // تشغيل الإعدادات المحفوظة
+    (function() {
+        if (localStorage.getItem('user_theme') === 'dark') document.body.classList.add('dark-mode');
+        if (localStorage.getItem('user_lang') === 'en') document.documentElement.dir = 'ltr';
+    })();
+</script>
     <script>
         const DB_URL = 'https://story-64520-default-rtdb.firebaseio.com/';
         let delegates = {}, branches = {}, admins = {}, currentRecords = {};
