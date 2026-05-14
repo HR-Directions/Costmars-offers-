@@ -630,46 +630,68 @@
             </div>
         </div>
     </div>
-
     <div id="settingsModal" class="modal">
-    <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md transform transition-all dark-mode-surface">
-        <div class="flex justify-between items-center mb-5 border-b pb-3 border-gray-100">
-            <h2 class="text-xl font-bold text-gray-800 dark-text-title"><i class="fa-solid fa-gear ml-2 text-secondary"></i> إعدادات النظام</h2>
-            <button onclick="closeSettingsModal()" class="text-gray-400 hover:text-red-500 transition-colors bg-gray-100 hover:bg-red-50 rounded-full w-8 h-8 flex items-center justify-center"><i class="fa-solid fa-xmark text-lg"></i></button>
+    <div class="bg-white rounded-2xl shadow-2xl p-0 overflow-hidden w-full max-w-md transform transition-all dark-mode-surface">
+        <div class="bg-slate-800 p-5 flex justify-between items-center text-white">
+            <h2 class="text-xl font-bold flex items-center gap-2">
+                <i class="fa-solid fa-sliders text-secondary"></i> تفضيلات النظام
+            </h2>
+            <button onclick="closeSettingsModal()" class="hover:rotate-90 transition-transform duration-300 bg-white/10 p-2 rounded-full">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
         </div>
         
-        <div class="space-y-5">
-            <div class="flex justify-between items-center bg-gray-50 p-4 rounded-lg border border-gray-100 dark-mode-item">
-                <div>
-                    <h3 class="font-bold text-gray-800 dark-text-title">الوضع الليلي (Dark Mode)</h3>
-                    <p class="text-xs text-gray-500">تغيير ألوان النظام للوضع الداكن</p>
+        <div class="p-6 space-y-6">
+            <section class="border-b pb-4 border-gray-100">
+                <h3 class="text-sm font-bold text-gray-400 mb-3 uppercase tracking-wider">المظهر واللغة</h3>
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl dark-mode-item mb-3">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-indigo-100 text-indigo-600 rounded-lg flex items-center justify-center">
+                            <i class="fa-solid fa-moon"></i>
+                        </div>
+                        <div>
+                            <p class="font-bold text-gray-800 dark-text-title">الوضع الليلي</p>
+                            <p class="text-xs text-gray-500">تفعيل المظهر الداكن</p>
+                        </div>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="darkModeToggle" class="sr-only peer" onchange="toggleTheme()">
+                        <div class="w-12 h-6 bg-gray-300 rounded-full peer peer-checked:bg-secondary after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-6"></div>
+                    </label>
                 </div>
-                <label class="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" id="darkModeToggle" class="sr-only peer" onchange="toggleTheme()">
-                    <div class="w-11 h-6 bg-gray-300 rounded-full peer peer-checked:after:-translate-x-full peer-checked:bg-secondary after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
-                </label>
-            </div>
 
-            <div class="flex justify-between items-center bg-gray-50 p-4 rounded-lg border border-gray-100 dark-mode-item">
-                <div>
-                    <h3 class="font-bold text-gray-800 dark-text-title">لغة النظام / اتجاه العرض</h3>
-                    <p class="text-xs text-gray-500">تغيير اتجاه التخطيط (RTL/LTR)</p>
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl dark-mode-item">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-lg flex items-center justify-center">
+                            <i class="fa-solid fa-language"></i>
+                        </div>
+                        <div>
+                            <p class="font-bold text-gray-800 dark-text-title">اللغة</p>
+                        </div>
+                    </div>
+                    <select id="languageSelect" onchange="toggleLanguage()" class="px-3 py-1.5 border rounded-lg bg-white text-gray-800 font-bold text-sm outline-none focus:ring-2 focus:ring-secondary">
+                        <option value="ar">العربية (RTL)</option>
+                        <option value="en">English (LTR)</option>
+                    </select>
                 </div>
-                <select id="languageSelect" onchange="toggleLanguage()" class="px-3 py-1 border rounded outline-none font-bold text-sm bg-white text-gray-800">
-                    <option value="ar">العربية (AR)</option>
-                    <option value="en">English (EN)</option>
-                </select>
-            </div>
+            </section>
 
-            <div class="border-t pt-4 border-gray-100">
-                <h3 class="font-bold text-gray-800 mb-3 dark-text-title"><i class="fa-solid fa-lock text-secondary ml-1"></i> تغيير كلمة المرور</h3>
+            <section>
+                <h3 class="text-sm font-bold text-gray-400 mb-3 uppercase tracking-wider text-red-500">الأمان وتغيير المرور</h3>
                 <form onsubmit="handlePasswordChange(event)" class="space-y-3">
-                    <input type="password" id="currentPass" required placeholder="كلمة المرور الحالية" class="w-full px-4 py-2 border rounded-lg outline-none focus:border-secondary text-sm">
-                    <input type="password" id="newPass" required placeholder="كلمة المرور الجديدة" class="w-full px-4 py-2 border rounded-lg outline-none focus:border-secondary text-sm">
-                    <input type="password" id="confirmNewPass" required placeholder="تأكيد كلمة المرور الجديدة" class="w-full px-4 py-2 border rounded-lg outline-none focus:border-secondary text-sm">
-                    <button type="submit" id="btnChangePass" class="w-full bg-red-50 text-red-600 border border-red-200 py-2 rounded-lg font-bold hover:bg-red-600 hover:text-white transition shadow-sm text-sm">تأكيد التغيير وتسجيل الخروج</button>
+                    <div class="relative">
+                        <i class="fa-solid fa-key absolute right-3 top-3 text-gray-400"></i>
+                        <input type="password" id="currentPass" required placeholder="كلمة المرور الحالية" class="w-full pr-10 pl-4 py-2 border rounded-lg outline-none focus:border-secondary text-sm">
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="password" id="newPass" required placeholder="كلمة جديدة" class="px-4 py-2 border rounded-lg outline-none focus:border-secondary text-sm">
+                        <input type="password" id="confirmNewPass" required placeholder="تأكيدها" class="px-4 py-2 border rounded-lg outline-none focus:border-secondary text-sm">
+                    </div>
+                    <button type="submit" id="btnChangePass" class="w-full bg-slate-100 text-slate-700 font-bold py-2.5 rounded-lg hover:bg-red-600 hover:text-white transition-all duration-300 border border-slate-200">
+                         تحديث كلمة المرور فقط
+                    </button>
                 </form>
-            </div>
+            </section>
         </div>
     </div>
 </div>
@@ -2365,70 +2387,66 @@
             } catch(e) {}
         }
 
-        // ==========================================
-// وظائف إعدادات العرض وتغيير كلمة المرور
-// ==========================================
-
+// وظيفة فتح النافذة وضبط حالة الأزرار بناءً على الوضع الحالي
 function openSettingsModal() {
-    document.getElementById('settingsModal').classList.add('active');
+    const modal = document.getElementById('settingsModal');
+    modal.classList.add('active');
+    
+    // تحديث حالة مفتاح التبديل بناءً على ما هو مطبق حالياً في الـ Body
     document.getElementById('darkModeToggle').checked = document.body.classList.contains('dark-mode');
-    document.getElementById('languageSelect').value = document.documentElement.dir === 'rtl' ? 'ar' : 'en';
+    
+    // تحديث حالة اللغة بناءً على اتجاه الصفحة
+    document.getElementById('languageSelect').value = document.documentElement.dir === 'ltr' ? 'en' : 'ar';
 }
 
-function closeSettingsModal() {
-    document.getElementById('settingsModal').classList.remove('active');
-}
-
+// وظيفة المظهر (تغيير فوري وتلقائي عند الضغط)
 function toggleTheme() {
     const isDark = document.getElementById('darkModeToggle').checked;
     if(isDark) {
         document.body.classList.add('dark-mode');
         localStorage.setItem('scissors_theme', 'dark');
+        showToast("تم تفعيل الوضع الليلي", "success");
     } else {
         document.body.classList.remove('dark-mode');
         localStorage.setItem('scissors_theme', 'light');
+        showToast("تم تفعيل الوضع المضيء", "success");
     }
 }
 
+// وظيفة اللغة (تغيير فوري وتلقائي عند الاختيار)
 function toggleLanguage() {
     const lang = document.getElementById('languageSelect').value;
     if (lang === 'en') {
         document.documentElement.dir = 'ltr';
         document.documentElement.lang = 'en';
-        showToast("تنبيه: تم تغيير اتجاه العرض. ترجمة النصوص بالكامل تتطلب قاموساً منفصلاً.", "warning");
+        localStorage.setItem('scissors_lang', 'en');
+        showToast("Layout changed to LTR", "info");
     } else {
         document.documentElement.dir = 'rtl';
         document.documentElement.lang = 'ar';
+        localStorage.setItem('scissors_lang', 'ar');
+        showToast("تم تغيير الاتجاه للعربية", "info");
     }
-    localStorage.setItem('scissors_lang', lang);
 }
 
-// تطبيق الإعدادات المحفوظة عند تحميل الصفحة
-document.addEventListener('DOMContentLoaded', () => {
-    if (localStorage.getItem('scissors_theme') === 'dark') {
-        document.body.classList.add('dark-mode');
-    }
-    if (localStorage.getItem('scissors_lang') === 'en') {
-        document.documentElement.dir = 'ltr';
-        document.documentElement.lang = 'en';
-    }
-});
-
+// وظيفة تغيير كلمة المرور (مستقلة تماماً، لا تُستدعى إلا بضغط زر الفورم)
 async function handlePasswordChange(e) {
     e.preventDefault();
+    
     const currentPass = document.getElementById('currentPass').value;
     const newPass = document.getElementById('newPass').value;
     const confirmPass = document.getElementById('confirmNewPass').value;
 
-    if (newPass !== confirmPass) {
-        return showToast("كلمة المرور الجديدة غير متطابقة!", "error");
+    if (newPass.length < 4) {
+        return showToast("كلمة المرور ضعيفة جداً", "error");
     }
 
-    if (!currentUser) return showToast("يجب تسجيل الدخول أولاً", "error");
+    if (newPass !== confirmPass) {
+        return showToast("كلمات المرور الجديدة غير متطابقة", "error");
+    }
 
     const btn = document.getElementById('btnChangePass');
-    const oldText = btn.innerHTML;
-    btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> جاري التحقق...';
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin ml-2"></i> جاري الحفظ...';
     btn.disabled = true;
 
     try {
@@ -2437,37 +2455,31 @@ async function handlePasswordChange(e) {
         const userData = await res.json();
 
         if (!userData || userData.password !== currentPass) {
-            showToast("كلمة المرور الحالية غير صحيحة!", "error");
-            btn.innerHTML = oldText;
+            showToast("كلمة المرور الحالية غير صحيحة", "error");
+            btn.innerHTML = 'تحديث كلمة المرور فقط';
             btn.disabled = false;
             return;
         }
 
-        // تحديث كلمة المرور في قاعدة البيانات
+        // التحديث في Firebase
         await fetch(`${DB_URL}${endpoint}/${currentUser.id}.json`, {
             method: 'PATCH',
             body: JSON.stringify({ password: newPass })
         });
 
-        showToast("تم تغيير كلمة المرور بنجاح! سيتم تسجيل الخروج الآن...", "success");
-        logActivity('edit', 'قام بتغيير كلمة المرور الخاصة بحسابه');
-        
-        // مسح الحقول وتسجيل الخروج بعد ثانيتين
-        document.getElementById('currentPass').value = '';
-        document.getElementById('newPass').value = '';
-        document.getElementById('confirmNewPass').value = '';
-        
-        setTimeout(() => {
-            logout();
-        }, 2000);
+        showToast("تم التغيير! سيتم الخروج للأمان..", "success");
+        logActivity('edit', 'تغيير كلمة المرور الشخصية');
 
-    } catch (error) {
-        showToast("حدث خطأ أثناء الاتصال بقاعدة البيانات", "error");
-        btn.innerHTML = oldText;
+        setTimeout(() => {
+            logout(); // تسجيل الخروج الإجباري للأمان بعد التغيير
+        }, 1500);
+
+    } catch (err) {
+        showToast("خطأ في الاتصال بالسيرفر", "error");
+        btn.innerHTML = 'تحديث كلمة المرور فقط';
         btn.disabled = false;
     }
 }
-
 
         
     </script>
