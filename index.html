@@ -9,6 +9,52 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <script>
+const i18n = {
+    ar: {
+        settings: "إعدادات النظام",
+        darkMode: "الوضع الليلي",
+        lang: "اللغة والاتجاه",
+        changePass: "تغيير كلمة المرور",
+        saveBtn: "حفظ التغييرات وتسجيل الخروج",
+        reports: "التقارير",
+        exit: "خروج",
+        dashboard: "لوحة التحكم"
+    },
+    en: {
+        settings: "System Settings",
+        darkMode: "Dark Mode",
+        lang: "Language & Direction",
+        changePass: "Change Password",
+        saveBtn: "Save & Logout",
+        reports: "Reports",
+        exit: "Logout",
+        dashboard: "Dashboard"
+    }
+};
+
+const translations = {
+    ar: {
+        adv_reports: "التقارير المتقدمة",
+        admins: "المسؤولين",
+        branches: "الفروع",
+        delegates: "المناديب",
+        joining_devices: "أجهزة الانضمام",
+        notifications: "الإعلامات والتحديثات",
+        tracking: "التتبع وسجل النشاط",
+        // ... باقي الكلمات
+    },
+    en: {
+        adv_reports: "Advanced Reports",
+        admins: "Administrators",
+        branches: "Branches",
+        delegates: "Delegates",
+        joining_devices: "Joining Devices",
+        notifications: "Notifications",
+        tracking: "Activity Tracking",
+        // ... باقي الكلمات
+    }
+};
+        
         tailwind.config = {
             theme: {
                 extend: {
@@ -305,17 +351,39 @@ body.dark-mode td {
             <section id="adminTab" class="tab-content">
                 <div class="flex flex-col md:flex-row gap-6">
                     <div class="w-full md:w-1/4">
-                        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden sticky top-24">
-                            <button onclick="switchAdminTab('reportsSubTab')" id="btn-reportsSubTab" class="admin-nav-btn w-full text-right px-6 py-4 font-bold border-b border-gray-100 bg-gray-50 text-primary border-r-4 border-r-primary transition-colors"><i class="fa-solid fa-chart-pie ml-2 w-5 text-center"></i>التقارير المتقدمة</button>
-                            <button onclick="switchAdminTab('adminsSubTab')" id="btn-adminsSubTab" class="admin-nav-btn w-full text-right px-6 py-4 font-bold border-b border-gray-100 text-gray-600 hover:bg-gray-50 transition-colors"><i class="fa-solid fa-user-shield ml-2 w-5 text-center"></i>المسؤولين</button>
-                            <button onclick="switchAdminTab('branchesSubTab')" id="btn-branchesSubTab" class="admin-nav-btn w-full text-right px-6 py-4 font-bold border-b border-gray-100 text-gray-600 hover:bg-gray-50 transition-colors"><i class="fa-solid fa-store ml-2 w-5 text-center"></i>الفروع</button>
-                            <button onclick="switchAdminTab('delegatesSubTab')" id="btn-delegatesSubTab" class="admin-nav-btn w-full text-right px-6 py-4 font-bold border-b border-gray-100 text-gray-600 hover:bg-gray-50 transition-colors"><i class="fa-solid fa-users ml-2 w-5 text-center"></i>المناديب</button>
-                            <button onclick="switchAdminTab('devicesSubTab'); loadDevices();" id="btn-devicesSubTab" class="admin-nav-btn w-full text-right px-6 py-4 font-bold border-b border-gray-100 text-gray-600 hover:bg-gray-50 transition-colors flex justify-between items-center"><span class="flex items-center"><i class="fa-solid fa-laptop-medical ml-2 w-5 text-center"></i>أجهزة الانضمام</span><span id="pendingDevicesBadge" class="hidden bg-red-500 text-white text-xs px-2 py-0.5 rounded-full animate-pulse">!</span></button>
-                            <button onclick="switchAdminTab('notificationsSubTab')" id="btn-notificationsSubTab" class="admin-nav-btn w-full text-right px-6 py-4 font-bold border-b border-gray-100 text-gray-600 hover:bg-gray-50 transition-colors"><i class="fa-solid fa-bell ml-2 w-5 text-center text-red-500"></i>الإعلامات والتحديثات</button>
-                            <button onclick="switchAdminTab('trackingSubTab'); loadLogs();" id="btn-trackingSubTab" class="admin-nav-btn w-full text-right px-6 py-4 font-bold text-gray-600 hover:bg-gray-50 transition-colors"><i class="fa-solid fa-eye ml-2 w-5 text-center"></i>التتبع وسجل النشاط</button>
-                        </div>
-                    </div>
-
+                       <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden sticky top-24 dark-mode-surface">
+    <button onclick="switchAdminTab('reportsSubTab')" id="btn-reportsSubTab" data-i18n="adv_reports" class="admin-nav-btn w-full text-right px-6 py-4 font-bold border-b border-gray-100 bg-gray-50 text-primary border-r-4 border-r-primary transition-colors dark-mode-item dark-text-white">
+        <i class="fa-solid fa-chart-pie ml-2 w-5 text-center"></i>التقارير المتقدمة
+    </button>
+    
+    <button onclick="switchAdminTab('adminsSubTab')" id="btn-adminsSubTab" data-i18n="admins" class="admin-nav-btn w-full text-right px-6 py-4 font-bold border-b border-gray-100 text-gray-600 hover:bg-gray-50 transition-colors dark-text-white">
+        <i class="fa-solid fa-user-shield ml-2 w-5 text-center"></i>المسؤولين
+    </button>
+    
+    <button onclick="switchAdminTab('branchesSubTab')" id="btn-branchesSubTab" data-i18n="branches" class="admin-nav-btn w-full text-right px-6 py-4 font-bold border-b border-gray-100 text-gray-600 hover:bg-gray-50 transition-colors dark-text-white">
+        <i class="fa-solid fa-store ml-2 w-5 text-center"></i>الفروع
+    </button>
+    
+    <button onclick="switchAdminTab('delegatesSubTab')" id="btn-delegatesSubTab" data-i18n="delegates" class="admin-nav-btn w-full text-right px-6 py-4 font-bold border-b border-gray-100 text-gray-600 hover:bg-gray-50 transition-colors dark-text-white">
+        <i class="fa-solid fa-users ml-2 w-5 text-center"></i>المناديب
+    </button>
+    
+    <button onclick="switchAdminTab('devicesSubTab'); loadDevices();" id="btn-devicesSubTab" class="admin-nav-btn w-full text-right px-6 py-4 font-bold border-b border-gray-100 text-gray-600 hover:bg-gray-50 transition-colors flex justify-between items-center dark-text-white">
+        <span class="flex items-center">
+            <i class="fa-solid fa-laptop-medical ml-2 w-5 text-center"></i>
+            <span data-i18n="joining_devices">أجهزة الانضمام</span>
+        </span>
+        <span id="pendingDevicesBadge" class="hidden bg-red-500 text-white text-xs px-2 py-0.5 rounded-full animate-pulse">!</span>
+    </button>
+    
+    <button onclick="switchAdminTab('notificationsSubTab')" id="btn-notificationsSubTab" data-i18n="notifications" class="admin-nav-btn w-full text-right px-6 py-4 font-bold border-b border-gray-100 text-gray-600 hover:bg-gray-50 transition-colors dark-text-white">
+        <i class="fa-solid fa-bell ml-2 w-5 text-center text-red-500"></i>الإعلامات والتحديثات
+    </button>
+    
+    <button onclick="switchAdminTab('trackingSubTab'); loadLogs();" id="btn-trackingSubTab" data-i18n="tracking" class="admin-nav-btn w-full text-right px-6 py-4 font-bold text-gray-600 hover:bg-gray-50 transition-colors dark-text-white">
+        <i class="fa-solid fa-eye ml-2 w-5 text-center"></i>التتبع وسجل النشاط
+    </button>
+</div>
                     <div class="w-full md:w-3/4">
                         
                         <div id="reportsSubTab" class="sub-tab-content active">
@@ -761,6 +829,16 @@ body.dark-mode td {
 </div>
 
 <style>
+       /* تحسين الخطوط عند التحويل للإنجليزية */
+html[lang="en"] body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+}
+
+html[lang="en"] .flex-row-reverse {
+    flex-direction: row !important; /* إصلاح العناصر المعكوسة */
+}
+
+    
     /* الفئات التي تضمن تحويل الأسود لابيض والعكس */
     body.dark-mode { background-color: #0f172a !important; color: #f1f5f9 !important; }
     
@@ -2544,8 +2622,24 @@ function openSettingsModal() {
 // تبديل اللغة (تغيير الاتجاه فقط)
 function toggleLanguage() {
     const lang = document.getElementById('languageSelect').value;
-    document.documentElement.dir = (lang === 'en') ? 'ltr' : 'rtl';
-    localStorage.setItem('app_lang', lang);
+    const isEn = lang === 'en';
+    
+    // 1. تغيير اتجاه الصفحة
+    document.documentElement.dir = isEn ? 'ltr' : 'rtl';
+    document.documentElement.lang = lang;
+    
+    // 2. تحديث النصوص التي تحمل سمة (data-i18n)
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (i18n[lang][key]) {
+            el.innerText = i18n[lang][key];
+        }
+    });
+
+    localStorage.setItem('user_lang', lang);
+    
+    // تنبيه بسيط
+    showToast(isEn ? "Language changed to English" : "تم تغيير اللغة للعربية", "info");
 }
 
 // تنفيذ الإعدادات فور التحميل
