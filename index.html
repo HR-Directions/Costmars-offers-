@@ -172,6 +172,22 @@ body.dark-mode td {
 /* زر الإغلاق */
 .close-btn { cursor: pointer; transition: all 0.2s; }
 .close-btn:hover { transform: scale(1.1); color: #ef4444; }
+
+        /* عند التحويل للغة الإنجليزية، استبدل الهامش من اليسار إلى اليمين */
+html[lang="en"] .ml-2 {
+    margin-left: 0 !important;
+    margin-right: 0.5rem !important; /* تعادل ml-2 */
+}
+
+/* عكس اتجاه خط التمييز في الأزرار الجانبية */
+html[lang="en"] .border-r-4 {
+    border-right-width: 0 !important;
+    border-left-width: 4px !important;
+}
+
+html[lang="en"] .text-right {
+    text-align: left !important;
+}
     </style>
 </head>
 <body class="text-gray-800 h-screen flex flex-col">
