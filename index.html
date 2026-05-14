@@ -68,24 +68,53 @@
             .print-header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 10px; }
             .print-footer { text-align: center; border-top: 2px solid #000; padding-top: 10px; margin-top: 10px; font-weight: bold; font-size: 14px;}
         }
-        /* إصلاحات المود الليلي */
-body.dark-mode { background-color: #0f172a !important; color: #f8fafc !important; }
-body.dark-mode .bg-white, body.dark-mode .dark-mode-surface { background-color: #1e293b !important; border-color: #334155 !important; color: #f8fafc !important; }
-body.dark-mode .dark-mode-item { background-color: #334155 !important; border-color: #475569 !important; }
-body.dark-mode h1, body.dark-mode h2, body.dark-mode h3, body.dark-mode .dark-text-title { color: #f1f5f9 !important; }
-body.dark-mode p, body.dark-mode span:not(.text-white) { color: #cbd5e1 !important; }
-body.dark-mode input, body.dark-mode select { background-color: #1e293b !important; border-color: #475569 !important; color: #fff !important; }
+      /* --- Global Theme & Dark Mode Logic --- */
+:root {
+    --bg-main: #f8fafc;
+    --bg-card: #ffffff;
+    --text-main: #1e293b;
+    --border-color: #e2e8f0;
+}
 
-/* إصلاح نافذة الإعدادات لتظهر وتختفي */
+body.dark-mode {
+    --bg-main: #0f172a; /* Deep Navy */
+    --bg-card: #1e293b; /* Slate Blue */
+    --text-main: #f1f5f9;
+    --border-color: #334155;
+    background-color: var(--bg-main) !important;
+    color: var(--text-main) !important;
+}
+
+/* تطبيق الألوان على العناصر */
+body.dark-mode .bg-white, 
+body.dark-mode .dark-mode-surface { background-color: var(--bg-card) !important; border-color: var(--border-color) !important; }
+
+body.dark-mode .bg-gray-50, 
+body.dark-mode .dark-mode-item { background-color: #111827 !important; border-color: var(--border-color) !important; }
+
+body.dark-mode .text-gray-800, 
+body.dark-mode .dark-text-title { color: #ffffff !important; }
+
+body.dark-mode .text-gray-600, 
+body.dark-mode p, body.dark-mode label { color: #94a3b8 !important; }
+
+body.dark-mode input, body.dark-mode select { 
+    background-color: #0f172a !important; 
+    border-color: #334155 !important; 
+    color: #fff !important; 
+}
+
+/* Modal Fix */
 .modal { 
-    display: none; 
-    position: fixed; 
-    top: 0; left: 0; width: 100%; height: 100%; 
-    background: rgba(0,0,0,0.6); 
-    z-index: 9999; 
-    align-items: center; justify-content: center; 
+    display: none; position: fixed; inset: 0; 
+    background: rgba(0, 0, 0, 0.7); z-index: 10000; 
+    align-items: center; justify-content: center; backdrop-filter: blur(4px);
 }
 .modal.active { display: flex !important; }
+
+/* Dashboard Fixes in Dark Mode */
+body.dark-mode .shadow-sm, body.dark-mode .shadow-md { shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3); }
+body.dark-mode table thead th { background-color: #111827 !important; color: #cbd5e1 !important; }
     </style>
 </head>
 <body class="text-gray-800 h-screen flex flex-col">
@@ -2405,67 +2434,52 @@ body.dark-mode input, body.dark-mode select { background-color: #1e293b !importa
             } catch(e) {}
         }
 
-        // دالة فتح نافذة الإعدادات
+       // دالة فتح الإعدادات
 function openSettingsModal() {
     const modal = document.getElementById('settingsModal');
-    if (modal) {
-        modal.classList.add('active');
-        // مزامنة حالة زر التبديل مع الوضع الحالي للجسم
-        document.getElementById('darkModeToggle').checked = document.body.classList.contains('dark-mode');
-    }
+    modal.classList.add('active');
+    // تحديث المفاتيح لتناسب الحالة الحالية
+    document.getElementById('darkModeToggle').checked = document.body.classList.contains('dark-mode');
 }
 
-// دالة إغلاق النافذة (إصلاح زر X)
+// دالة الإغلاق (تعمل 100% الآن)
 function closeSettingsModal() {
-    const modal = document.getElementById('settingsModal');
-    if (modal) {
-        modal.classList.remove('active');
-    }
+    document.getElementById('settingsModal').classList.remove('active');
 }
 
-// دالة تبديل الوضع الليلي (إصلاح التغيير الفوري)
+// تبديل المظهر
 function toggleTheme() {
     const isDark = document.getElementById('darkModeToggle').checked;
-    if(isDark) {
+    if (isDark) {
         document.body.classList.add('dark-mode');
-        localStorage.setItem('scissors_theme', 'dark');
+        localStorage.setItem('app_theme', 'dark');
     } else {
         document.body.classList.remove('dark-mode');
-        localStorage.setItem('scissors_theme', 'light');
+        localStorage.setItem('app_theme', 'light');
     }
 }
 
-// دالة تبديل اللغة والاتجاه
+// تبديل اللغة (تغيير الاتجاه فقط)
 function toggleLanguage() {
     const lang = document.getElementById('languageSelect').value;
-    if (lang === 'en') {
-        document.documentElement.dir = 'ltr';
-        document.body.style.textAlign = 'left';
-    } else {
-        document.documentElement.dir = 'rtl';
-        document.body.style.textAlign = 'right';
-    }
-    localStorage.setItem('scissors_lang', lang);
+    document.documentElement.dir = (lang === 'en') ? 'ltr' : 'rtl';
+    localStorage.setItem('app_lang', lang);
 }
 
-// تشغيل الإعدادات المحفوظة فور تحميل الصفحة
+// تنفيذ الإعدادات فور التحميل
 (function() {
-    if (localStorage.getItem('scissors_theme') === 'dark') {
+    if (localStorage.getItem('app_theme') === 'dark') {
         document.body.classList.add('dark-mode');
     }
-    const savedLang = localStorage.getItem('scissors_lang');
-    if (savedLang === 'en') {
+    if (localStorage.getItem('app_lang') === 'en') {
         document.documentElement.dir = 'ltr';
     }
 })();
 
-// إغلاق النافذة عند الضغط خارجها
-window.onclick = function(event) {
-    const modal = document.getElementById('settingsModal');
-    if (event.target == modal) {
-        closeSettingsModal();
-    }
-}
+// إغلاق عند الضغط على مفتاح Escape
+document.addEventListener('keydown', (e) => {
+    if (e.key === "Escape") closeSettingsModal();
+});
 
         
     </script>
