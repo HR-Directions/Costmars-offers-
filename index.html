@@ -153,6 +153,8 @@
                     </button>
                     <button onclick="switchTab('adminTab')" id="btn-adminTab" class="nav-btn hidden px-4 py-2 rounded-md font-semibold transition-all duration-200 hover:bg-white/20 text-white"><i class="fa-solid fa-gears ml-2"></i>الإدارة</button>
                     <button onclick="logout()" class="px-4 py-2 rounded-md font-semibold text-red-300 hover:bg-red-500 hover:text-white transition-all"><i class="fa-solid fa-sign-out-alt ml-2"></i>خروج</button>
+                    <button onclick="openSettingsModal()" class="px-4 py-2 rounded-md font-semibold text-white hover:bg-white/20 transition-all bg-slate-700 shadow-sm hover:shadow-md"><i class="fa-solid fa-gear ml-2"></i>إعدادات العرض
+                   </button>
                 </nav>
             </div>
         </header>
@@ -281,7 +283,10 @@
                                     </div>
                                 </div>
                             </div>
-
+                             <div id="reportLoading" class="hidden mb-6 p-6 bg-blue-50 text-center rounded-xl text-primary font-bold border border-blue-100">
+    <i class="fa-solid fa-circle-notch fa-spin text-3xl mb-3"></i>
+    <p>جاري استخراج بيانات التقرير...</p>
+</div>
                             <div id="bulkDeleteContainer" class="hidden mb-6 flex flex-col sm:flex-row justify-between items-center gap-4 bg-red-50 p-4 rounded-xl border border-red-200 shadow-sm transition-all duration-300">
                                 <div class="flex items-center gap-3">
                                     <div class="bg-red-200 text-red-700 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shadow-inner" id="selectedCountBadge">0</div>
@@ -625,6 +630,49 @@
             </div>
         </div>
     </div>
+
+    <div id="settingsModal" class="modal">
+    <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md transform transition-all dark-mode-surface">
+        <div class="flex justify-between items-center mb-5 border-b pb-3 border-gray-100">
+            <h2 class="text-xl font-bold text-gray-800 dark-text-title"><i class="fa-solid fa-gear ml-2 text-secondary"></i> إعدادات النظام</h2>
+            <button onclick="closeSettingsModal()" class="text-gray-400 hover:text-red-500 transition-colors bg-gray-100 hover:bg-red-50 rounded-full w-8 h-8 flex items-center justify-center"><i class="fa-solid fa-xmark text-lg"></i></button>
+        </div>
+        
+        <div class="space-y-5">
+            <div class="flex justify-between items-center bg-gray-50 p-4 rounded-lg border border-gray-100 dark-mode-item">
+                <div>
+                    <h3 class="font-bold text-gray-800 dark-text-title">الوضع الليلي (Dark Mode)</h3>
+                    <p class="text-xs text-gray-500">تغيير ألوان النظام للوضع الداكن</p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="darkModeToggle" class="sr-only peer" onchange="toggleTheme()">
+                    <div class="w-11 h-6 bg-gray-300 rounded-full peer peer-checked:after:-translate-x-full peer-checked:bg-secondary after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+                </label>
+            </div>
+
+            <div class="flex justify-between items-center bg-gray-50 p-4 rounded-lg border border-gray-100 dark-mode-item">
+                <div>
+                    <h3 class="font-bold text-gray-800 dark-text-title">لغة النظام / اتجاه العرض</h3>
+                    <p class="text-xs text-gray-500">تغيير اتجاه التخطيط (RTL/LTR)</p>
+                </div>
+                <select id="languageSelect" onchange="toggleLanguage()" class="px-3 py-1 border rounded outline-none font-bold text-sm bg-white text-gray-800">
+                    <option value="ar">العربية (AR)</option>
+                    <option value="en">English (EN)</option>
+                </select>
+            </div>
+
+            <div class="border-t pt-4 border-gray-100">
+                <h3 class="font-bold text-gray-800 mb-3 dark-text-title"><i class="fa-solid fa-lock text-secondary ml-1"></i> تغيير كلمة المرور</h3>
+                <form onsubmit="handlePasswordChange(event)" class="space-y-3">
+                    <input type="password" id="currentPass" required placeholder="كلمة المرور الحالية" class="w-full px-4 py-2 border rounded-lg outline-none focus:border-secondary text-sm">
+                    <input type="password" id="newPass" required placeholder="كلمة المرور الجديدة" class="w-full px-4 py-2 border rounded-lg outline-none focus:border-secondary text-sm">
+                    <input type="password" id="confirmNewPass" required placeholder="تأكيد كلمة المرور الجديدة" class="w-full px-4 py-2 border rounded-lg outline-none focus:border-secondary text-sm">
+                    <button type="submit" id="btnChangePass" class="w-full bg-red-50 text-red-600 border border-red-200 py-2 rounded-lg font-bold hover:bg-red-600 hover:text-white transition shadow-sm text-sm">تأكيد التغيير وتسجيل الخروج</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 
     <script>
         const DB_URL = 'https://story-64520-default-rtdb.firebaseio.com/';
@@ -2316,6 +2364,112 @@
                 
             } catch(e) {}
         }
+
+        // ==========================================
+// وظائف إعدادات العرض وتغيير كلمة المرور
+// ==========================================
+
+function openSettingsModal() {
+    document.getElementById('settingsModal').classList.add('active');
+    document.getElementById('darkModeToggle').checked = document.body.classList.contains('dark-mode');
+    document.getElementById('languageSelect').value = document.documentElement.dir === 'rtl' ? 'ar' : 'en';
+}
+
+function closeSettingsModal() {
+    document.getElementById('settingsModal').classList.remove('active');
+}
+
+function toggleTheme() {
+    const isDark = document.getElementById('darkModeToggle').checked;
+    if(isDark) {
+        document.body.classList.add('dark-mode');
+        localStorage.setItem('scissors_theme', 'dark');
+    } else {
+        document.body.classList.remove('dark-mode');
+        localStorage.setItem('scissors_theme', 'light');
+    }
+}
+
+function toggleLanguage() {
+    const lang = document.getElementById('languageSelect').value;
+    if (lang === 'en') {
+        document.documentElement.dir = 'ltr';
+        document.documentElement.lang = 'en';
+        showToast("تنبيه: تم تغيير اتجاه العرض. ترجمة النصوص بالكامل تتطلب قاموساً منفصلاً.", "warning");
+    } else {
+        document.documentElement.dir = 'rtl';
+        document.documentElement.lang = 'ar';
+    }
+    localStorage.setItem('scissors_lang', lang);
+}
+
+// تطبيق الإعدادات المحفوظة عند تحميل الصفحة
+document.addEventListener('DOMContentLoaded', () => {
+    if (localStorage.getItem('scissors_theme') === 'dark') {
+        document.body.classList.add('dark-mode');
+    }
+    if (localStorage.getItem('scissors_lang') === 'en') {
+        document.documentElement.dir = 'ltr';
+        document.documentElement.lang = 'en';
+    }
+});
+
+async function handlePasswordChange(e) {
+    e.preventDefault();
+    const currentPass = document.getElementById('currentPass').value;
+    const newPass = document.getElementById('newPass').value;
+    const confirmPass = document.getElementById('confirmNewPass').value;
+
+    if (newPass !== confirmPass) {
+        return showToast("كلمة المرور الجديدة غير متطابقة!", "error");
+    }
+
+    if (!currentUser) return showToast("يجب تسجيل الدخول أولاً", "error");
+
+    const btn = document.getElementById('btnChangePass');
+    const oldText = btn.innerHTML;
+    btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> جاري التحقق...';
+    btn.disabled = true;
+
+    try {
+        const endpoint = currentUser.role === 'admin' ? 'admins' : 'branches';
+        const res = await fetch(`${DB_URL}${endpoint}/${currentUser.id}.json`);
+        const userData = await res.json();
+
+        if (!userData || userData.password !== currentPass) {
+            showToast("كلمة المرور الحالية غير صحيحة!", "error");
+            btn.innerHTML = oldText;
+            btn.disabled = false;
+            return;
+        }
+
+        // تحديث كلمة المرور في قاعدة البيانات
+        await fetch(`${DB_URL}${endpoint}/${currentUser.id}.json`, {
+            method: 'PATCH',
+            body: JSON.stringify({ password: newPass })
+        });
+
+        showToast("تم تغيير كلمة المرور بنجاح! سيتم تسجيل الخروج الآن...", "success");
+        logActivity('edit', 'قام بتغيير كلمة المرور الخاصة بحسابه');
+        
+        // مسح الحقول وتسجيل الخروج بعد ثانيتين
+        document.getElementById('currentPass').value = '';
+        document.getElementById('newPass').value = '';
+        document.getElementById('confirmNewPass').value = '';
+        
+        setTimeout(() => {
+            logout();
+        }, 2000);
+
+    } catch (error) {
+        showToast("حدث خطأ أثناء الاتصال بقاعدة البيانات", "error");
+        btn.innerHTML = oldText;
+        btn.disabled = false;
+    }
+}
+
+
+        
     </script>
 </body>
 </html>
