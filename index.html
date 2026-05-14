@@ -1322,7 +1322,9 @@
                         const now = Date.now();
                         Object.values(data).forEach(r => {
                             if(r.orderNumber && r.status === 'pending') {
-                                if((now - r.timestamp) > 3600000) {
+                                                              const gracePeriod = r.extendedTimeMs || 0;
+                                if((now - r.timestamp) > (3600000 + gracePeriod)) {
+                                    
                                     if (currentUser.role === 'admin') {
                                          if(currentUser.adminType === 'branch_manager') {
                                              if(r.sourceBranchId === currentUser.assignedBranch || r.branchId === currentUser.assignedBranch || (delegates[r.delegateId] && delegates[r.delegateId].branchId === currentUser.assignedBranch)) {
@@ -2167,7 +2169,50 @@
                             const timeTaken = formatTimeDiff(r.deliveryTimestamp - r.timestamp);
                             deliveryStatusHtml = `<div class="text-green-600 font-bold text-sm bg-green-50 inline-block px-2 py-1 rounded border border-green-100"><i class="fa-solid fa-check-double"></i> تم التوصيل</div><div class="text-xs font-bold text-gray-500 mt-1"><i class="fa-regular fa-clock"></i> استغرق: ${timeTaken}</div>`;
                         } else {
-                            const isOverdue = (Date.now() - r.timestamp) > 3600000;
+                                                const now = Date.now();
+                    pendingOrders.forEach(r => {
+                        // حساب الوقت الإضافي (إن وجد)
+                        const gracePeriod = r.extendedTimeMs || 0;
+                        // التحقق من التأخير بناءً على (ساعة + أي وقت إضافي)
+                                                    const gracePeriod = r.extendedTimeMs || 0;
+                            const isOverdue = (Date.now() - r.timestamp) > (3600000 + gracePeriod);
+                        
+                        
+                        const overdueClass = isOverdue ? 'overdue-order bg-red-50/40 border-l-4 border-l-red-500' : '';
+                        const overdueWarning = isOverdue ? `<div class="text-xs font-bold text-red-600 mt-1 animate-pulse"><i class="fa-solid fa-triangle-exclamation"></i> متأخر (انتهى الوقت)</div>` : '';
+                        
+                        const orderValNum = Number(r.orderValue) || 0;
+                        const changeValNum = Number(r.changeAmount) || 0;
+                        const rowTotal = orderValNum + changeValNum;
+                        
+                        let changeHtml = changeValNum > 0 ? `<div class="text-[10px] text-teal-600 font-bold bg-teal-50 px-1 rounded inline-block mt-1">شامل باقي: ${changeValNum}</div>` : '';
+
+                        // تجهيز زر التمديد (يظهر فقط إذا لم يتم التمديد مسبقاً)
+                        let extensionBtnHtml = '';
+                        if (!r.extendedTimeMs) {
+                            extensionBtnHtml = `<button onclick="addExtraTime('${r.date}', '${r.id}')" class="bg-blue-500 text-white px-3 py-2 rounded-lg text-sm font-bold hover:bg-blue-600 shadow-md transform hover:scale-105 transition-all ml-2" title="تمديد 30 دقيقة"><i class="fa-solid fa-stopwatch"></i> +30 د</button>`;
+                        } else {
+                            extensionBtnHtml = `<span class="bg-blue-100 text-blue-800 border border-blue-200 text-xs px-2 py-1 rounded-lg ml-2 font-bold shadow-sm" title="تم تمديد الوقت مسبقاً"><i class="fa-solid fa-stopwatch"></i> مُمدد</span>`;
+                        }
+
+                        tbody.innerHTML += `
+                        <tr class="border-b transition-colors hover:bg-orange-50/50 ${overdueClass}">
+                            <td class="p-4 text-sm"><div class="font-bold ${isOverdue ? 'text-red-700' : 'text-gray-700'}">${r.date}</div><div class="text-xs text-gray-500 mt-1" dir="ltr"><i class="fa-regular fa-clock"></i> ${r.time}</div>${overdueWarning}</td>
+                            <td class="p-4"><span class="font-extrabold text-orange-600 bg-orange-100 border border-orange-200 px-3 py-1.5 rounded-lg shadow-sm tracking-wider"># ${r.orderNumber}</span></td>
+                            <td class="p-4">
+                                <div class="font-bold text-gray-800 text-lg">${rowTotal > 0 ? rowTotal : 'غير محدد'} <span class="text-xs text-gray-500">ج.م</span></div>
+                                ${changeHtml}
+                            </td>
+                            <td class="p-4 font-semibold text-gray-800 flex items-center">${racingBikeIcon} ${r.delegateName}</td>
+                            <td class="p-4 text-center">
+                                <div class="flex justify-center items-center">
+                                    ${extensionBtnHtml}
+                                    <button onclick="markOrderAsDelivered('${r.date}', '${r.id}')" class="bg-green-500 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-green-600 shadow-md transform hover:scale-105 transition-all"><i class="fa-solid fa-check-double mr-1"></i> تسليم</button>
+                                </div>
+                            </td>
+                        </tr>`;
+                    });
+                            
                             if(isOverdue) deliveryStatusHtml = `<div class="text-red-600 font-bold text-sm bg-red-50 inline-block px-2 py-1 rounded border border-red-200 shadow-sm animate-pulse"><i class="fa-solid fa-triangle-exclamation"></i> متأخر جداً</div>`;
                             else deliveryStatusHtml = `<div class="text-amber-500 font-bold text-sm bg-amber-50 flex items-center justify-center px-2 py-1 rounded border border-amber-100">${racingBikeIcon} قيد التوصيل</div>`;
                         }
@@ -2321,6 +2366,27 @@
                 
             } catch(e) {}
         }
+
+                async function addExtraTime(date, recordId) {
+            if(!confirm("تأكيد: هل تريد إعطاء المندوب 30 دقيقة إضافية لتوصيل هذا الأوردر؟")) return;
+            try {
+                // إضافة 30 دقيقة (1,800,000 مللي ثانية)
+                await fetch(`${DB_URL}records/${date}/${recordId}.json`, { 
+                    method: 'PATCH', 
+                    body: JSON.stringify({ extendedTimeMs: 1800000 }) 
+                });
+                
+                showToast("تم تمديد وقت التسليم 30 دقيقة إضافية بنجاح", "success");
+                
+                // تحديث الواجهة والإنذارات فوراً
+                checkOverdueOrdersBackground(); 
+                openPendingOrdersModal();
+                logActivity('edit', `قام بتمديد وقت الأوردر لمدة 30 دقيقة إضافية للسجل: ${recordId}`);
+            } catch(e) { 
+                showToast("حدث خطأ أثناء تمديد الوقت", "error"); 
+            }
+                }
+        
     </script>
 </body>
 </html>
