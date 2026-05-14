@@ -1879,18 +1879,31 @@
                 
                 if(pendingOrders.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="5" class="p-10 text-center text-gray-500 bg-gray-50"><i class="fa-solid fa-clipboard-check text-4xl text-green-400 mb-3 block"></i><span class="font-bold text-lg">ممتاز! لا توجد أوردرات معلقة حالياً.</span></td></tr>';
-                } else {
+           
+                                        } else {
                     const now = Date.now();
                     pendingOrders.forEach(r => {
-                        const isOverdue = (now - r.timestamp) > 3600000; 
+                        // حساب الوقت الإضافي (إن وجد)
+                        const gracePeriod = r.extendedTimeMs || 0;
+                        // التحقق من التأخير بناءً على (ساعة + أي وقت إضافي)
+                        const isOverdue = (now - r.timestamp) > (3600000 + gracePeriod); 
+                        
                         const overdueClass = isOverdue ? 'overdue-order bg-red-50/40 border-l-4 border-l-red-500' : '';
-                        const overdueWarning = isOverdue ? `<div class="text-xs font-bold text-red-600 mt-1 animate-pulse"><i class="fa-solid fa-triangle-exclamation"></i> متأخر (أكثر من ساعة)</div>` : '';
+                        const overdueWarning = isOverdue ? `<div class="text-xs font-bold text-red-600 mt-1 animate-pulse"><i class="fa-solid fa-triangle-exclamation"></i> متأخر (انتهى الوقت)</div>` : '';
                         
                         const orderValNum = Number(r.orderValue) || 0;
                         const changeValNum = Number(r.changeAmount) || 0;
                         const rowTotal = orderValNum + changeValNum;
                         
                         let changeHtml = changeValNum > 0 ? `<div class="text-[10px] text-teal-600 font-bold bg-teal-50 px-1 rounded inline-block mt-1">شامل باقي: ${changeValNum}</div>` : '';
+
+                        // تجهيز زر التمديد (يظهر فقط إذا لم يتم التمديد مسبقاً)
+                        let extensionBtnHtml = '';
+                        if (!r.extendedTimeMs) {
+                            extensionBtnHtml = `<button onclick="addExtraTime('${r.date}', '${r.id}')" class="bg-blue-500 text-white px-3 py-2 rounded-lg text-sm font-bold hover:bg-blue-600 shadow-md transform hover:scale-105 transition-all ml-2" title="تمديد 30 دقيقة"><i class="fa-solid fa-stopwatch"></i> +30 د</button>`;
+                        } else {
+                            extensionBtnHtml = `<span class="bg-blue-100 text-blue-800 border border-blue-200 text-xs px-2 py-1 rounded-lg ml-2 font-bold shadow-sm" title="تم تمديد الوقت مسبقاً"><i class="fa-solid fa-stopwatch"></i> مُمدد</span>`;
+                        }
 
                         tbody.innerHTML += `
                         <tr class="border-b transition-colors hover:bg-orange-50/50 ${overdueClass}">
@@ -1901,14 +1914,16 @@
                                 ${changeHtml}
                             </td>
                             <td class="p-4 font-semibold text-gray-800 flex items-center">${racingBikeIcon} ${r.delegateName}</td>
-                            <td class="p-4 text-center"><button onclick="markOrderAsDelivered('${r.date}', '${r.id}')" class="bg-green-500 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-green-600 shadow-md transform hover:scale-105 transition-all"><i class="fa-solid fa-check-double mr-1"></i> تأكيد التسليم</button></td>
+                            <td class="p-4 text-center">
+                                <div class="flex justify-center items-center">
+                                    ${extensionBtnHtml}
+                                    <button onclick="markOrderAsDelivered('${r.date}', '${r.id}')" class="bg-green-500 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-green-600 shadow-md transform hover:scale-105 transition-all"><i class="fa-solid fa-check-double mr-1"></i> تسليم</button>
+                                </div>
+                            </td>
                         </tr>`;
                     });
                 }
-            } catch(e) { showToast("حدث خطأ في جلب بيانات الأوردرات", "error"); }
-            
-            if(loadingIndicator) loadingIndicator.classList.add('hidden');
-        }
+                
 
         function closePendingOrdersModal() { document.getElementById('pendingOrdersModal').classList.remove('active'); }
 
@@ -2162,15 +2177,34 @@
                     let changeHtml = (r.changeAmount && Number(r.changeAmount) > 0) ? `<div class="text-xs text-teal-600 font-bold mt-1 bg-teal-50 inline-block px-1.5 py-0.5 rounded"><i class="fa-solid fa-coins"></i> سحب باقي: ${r.changeAmount} ج.م</div>` : '';
                     const orderDetails = r.orderNumber ? `<div class="bg-gray-50 border border-gray-200 p-2 rounded-lg inline-block text-right w-full"><div class="font-bold text-orange-600 text-sm mb-1"><i class="fa-solid fa-hashtag text-xs"></i> ${r.orderNumber}</div><div class="text-xs font-semibold text-gray-500">القيمة: <span class="text-gray-800">${r.orderValue||'غير محدد'}</span></div>${changeHtml}</div>` : '<span class="text-gray-300 font-bold">-</span>';
                     const creatorName = r.createdByUserName || '<span class="text-xs text-gray-400">غير محدد</span>';
-                    
-                    let deliveryStatusHtml = '<span class="text-gray-300 font-bold">-</span>';
+
+                                        let deliveryStatusHtml = '<span class="text-gray-300 font-bold">-</span>';
                     if(r.orderNumber) {
                         if(r.status === 'delivered' && r.deliveryTimestamp) {
                             const timeTaken = formatTimeDiff(r.deliveryTimestamp - r.timestamp);
                             deliveryStatusHtml = `<div class="text-green-600 font-bold text-sm bg-green-50 inline-block px-2 py-1 rounded border border-green-100"><i class="fa-solid fa-check-double"></i> تم التوصيل</div><div class="text-xs font-bold text-gray-500 mt-1"><i class="fa-regular fa-clock"></i> استغرق: ${timeTaken}</div>`;
                         } else {
-                                                const now = Date.now();
-                    pendingOrders.forEach(r => {
+                            const gracePeriod = r.extendedTimeMs || 0;
+                            const isOverdue = (Date.now() - r.timestamp) > (3600000 + gracePeriod);
+                            
+                            if(isOverdue) deliveryStatusHtml = `<div class="text-red-600 font-bold text-sm bg-red-50 inline-block px-2 py-1 rounded border border-red-200 shadow-sm animate-pulse"><i class="fa-solid fa-triangle-exclamation"></i> متأخر جداً</div>`;
+                            else deliveryStatusHtml = `<div class="text-amber-500 font-bold text-sm bg-amber-50 flex items-center justify-center px-2 py-1 rounded border border-amber-100">${racingBikeIcon} قيد التوصيل</div>`;
+                        }
+                    }
+
+                    tbody.innerHTML += `
+                    <tr class="border-b hover:bg-blue-50/50 transition-colors">
+                        <td class="p-3 text-center"><input type="checkbox" class="report-row-checkbox w-4 h-4 cursor-pointer accent-red-600" value="${r.id}" data-date="${r.date}" onclick="updateBulkDeleteBtn()"></td>
+                        <td class="p-3"><div class="font-bold text-sm text-gray-700">${r.date}</div><div class="text-xs text-gray-500 mt-1" dir="ltr"><i class="fa-regular fa-clock"></i> ${r.time}</div></td>
+                        <td class="p-3 text-sm font-bold text-primary bg-blue-50/30">${creatorName}</td>
+                        <td class="p-3"><span class="font-bold bg-white px-2 py-0.5 rounded border shadow-sm text-xs ml-1">${r.delegateCode}</span> <span class="font-semibold text-gray-800">${r.delegateName}</span></td>
+                        <td class="p-3 font-bold text-teal-700">${r.branchName}</td>
+                        <td class="p-3 text-center"><span class="bg-accent px-3 py-1 text-white font-bold rounded-full shadow-sm text-sm">x${rCount}</span></td>
+                        <td class="p-3">${orderDetails}</td>
+                        <td class="p-3 text-center">${deliveryStatusHtml}</td>
+                    </tr>`;
+                    
+                
                         // حساب الوقت الإضافي (إن وجد)
                         const gracePeriod = r.extendedTimeMs || 0;
                         // التحقق من التأخير بناءً على (ساعة + أي وقت إضافي)
