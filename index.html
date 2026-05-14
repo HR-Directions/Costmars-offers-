@@ -68,53 +68,64 @@
             .print-header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 5px; margin-bottom: 10px; }
             .print-footer { text-align: center; border-top: 2px solid #000; padding-top: 10px; margin-top: 10px; font-weight: bold; font-size: 14px;}
         }
-      /* --- Global Theme & Dark Mode Logic --- */
-:root {
-    --bg-main: #f8fafc;
-    --bg-card: #ffffff;
-    --text-main: #1e293b;
-    --border-color: #e2e8f0;
-}
-
+    /* --- نظام الألوان الذكي --- */
 body.dark-mode {
-    --bg-main: #0f172a; /* Deep Navy */
-    --bg-card: #1e293b; /* Slate Blue */
-    --text-main: #f1f5f9;
-    --border-color: #334155;
-    background-color: var(--bg-main) !important;
-    color: var(--text-main) !important;
+    background-color: #0f172a !important; /* خلفية كحلية عميقة */
+    color: #f1f5f9 !important; /* نص أساسي أبيض مائل للرمادي */
 }
 
-/* تطبيق الألوان على العناصر */
-body.dark-mode .bg-white, 
-body.dark-mode .dark-mode-surface { background-color: var(--bg-card) !important; border-color: var(--border-color) !important; }
-
-body.dark-mode .bg-gray-50, 
-body.dark-mode .dark-mode-item { background-color: #111827 !important; border-color: var(--border-color) !important; }
-
-body.dark-mode .text-gray-800, 
-body.dark-mode .dark-text-title { color: #ffffff !important; }
-
-body.dark-mode .text-gray-600, 
-body.dark-mode p, body.dark-mode label { color: #94a3b8 !important; }
-
-body.dark-mode input, body.dark-mode select { 
-    background-color: #0f172a !important; 
-    border-color: #334155 !important; 
-    color: #fff !important; 
+/* تحويل كافة النصوص السوداء والرمادية إلى بيضاء */
+body.dark-mode .text-gray-900,
+body.dark-mode .text-gray-800,
+body.dark-mode .text-gray-700,
+body.dark-mode h1, 
+body.dark-mode h2, 
+body.dark-mode h3, 
+body.dark-mode h4,
+body.dark-mode label,
+body.dark-mode .dark-text-white {
+    color: #ffffff !important;
 }
 
-/* Modal Fix */
+/* تحويل البطاقات (Cards) */
+body.dark-mode .bg-white {
+    background-color: #1e293b !important; /* لون Slate Card */
+    border-color: #334155 !important;
+}
+
+/* تحويل المدخلات (Inputs) */
+body.dark-mode input, 
+body.dark-mode select, 
+body.dark-mode textarea {
+    background-color: #0f172a !important;
+    color: #ffffff !important;
+    border-color: #334155 !important;
+}
+
+/* تحويل الجداول */
+body.dark-mode table {
+    background-color: #1e293b !important;
+    color: #f1f5f9 !important;
+}
+body.dark-mode thead th {
+    background-color: #111827 !important;
+    color: #ffffff !important;
+}
+body.dark-mode td {
+    border-color: #334155 !important;
+}
+
+/* إصلاح النافذة المنبثقة (Modal) */
 .modal { 
     display: none; position: fixed; inset: 0; 
-    background: rgba(0, 0, 0, 0.7); z-index: 10000; 
-    align-items: center; justify-content: center; backdrop-filter: blur(4px);
+    background: rgba(0, 0, 0, 0.8); z-index: 10000; 
+    align-items: center; justify-content: center; backdrop-filter: blur(8px);
 }
 .modal.active { display: flex !important; }
 
-/* Dashboard Fixes in Dark Mode */
-body.dark-mode .shadow-sm, body.dark-mode .shadow-md { shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3); }
-body.dark-mode table thead th { background-color: #111827 !important; color: #cbd5e1 !important; }
+/* زر الإغلاق */
+.close-btn { cursor: pointer; transition: all 0.2s; }
+.close-btn:hover { transform: scale(1.1); color: #ef4444; }
     </style>
 </head>
 <body class="text-gray-800 h-screen flex flex-col">
@@ -677,16 +688,16 @@ body.dark-mode table thead th { background-color: #111827 !important; color: #cb
             </div>
         </div>
     </div>
-    <div id="settingsModal" class="modal">
-    <div class="bg-white rounded-2xl shadow-2xl p-0 overflow-hidden w-full max-w-md transform transition-all dark-mode-surface">
-        <div class="bg-slate-800 p-5 flex justify-between items-center text-white">
-            <h2 class="text-xl font-bold flex items-center gap-2">
-                <i class="fa-solid fa-sliders text-secondary"></i> تفضيلات النظام
-            </h2>
-            <button onclick="closeSettingsModal()" class="hover:rotate-90 transition-transform duration-300 bg-white/10 p-2 rounded-full">
-                <i class="fa-solid fa-xmark text-lg"></i>
-            </button>
+  <div id="settingsModal" class="modal">
+    <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md border border-gray-100 dark:border-gray-700 transition-all">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold text-gray-800 dark-text-white">الإعدادات</h2>
+            <div onclick="closeSettingsModal()" class="close-btn text-gray-400">
+                <i class="fa-solid fa-circle-xmark text-2xl"></i>
+            </div>
         </div>
+        </div>
+</div>
         
         <div class="p-6 space-y-6">
             <section class="border-b pb-4 border-gray-100">
@@ -2435,30 +2446,39 @@ body.dark-mode table thead th { background-color: #111827 !important; color: #cb
         }
 
        // دالة فتح الإعدادات
-function openSettingsModal() {
-    const modal = document.getElementById('settingsModal');
-    modal.classList.add('active');
-    // تحديث المفاتيح لتناسب الحالة الحالية
-    document.getElementById('darkModeToggle').checked = document.body.classList.contains('dark-mode');
-}
-
-// دالة الإغلاق (تعمل 100% الآن)
-function closeSettingsModal() {
-    document.getElementById('settingsModal').classList.remove('active');
-}
-
-// تبديل المظهر
 function toggleTheme() {
     const isDark = document.getElementById('darkModeToggle').checked;
+    const body = document.body;
+    
     if (isDark) {
-        document.body.classList.add('dark-mode');
-        localStorage.setItem('app_theme', 'dark');
+        body.classList.add('dark-mode');
+        localStorage.setItem('theme', 'dark');
+        showToast("تم تفعيل الوضع الليلي", "success");
     } else {
-        document.body.classList.remove('dark-mode');
-        localStorage.setItem('app_theme', 'light');
+        body.classList.remove('dark-mode');
+        localStorage.setItem('theme', 'light');
+        showToast("تم تفعيل الوضع النهاري", "success");
     }
 }
 
+// دالة الإغلاق الفورية
+function closeSettingsModal() {
+    const modal = document.getElementById('settingsModal');
+    modal.classList.remove('active');
+}
+
+// فتح النافذة
+function openSettingsModal() {
+    document.getElementById('settingsModal').classList.add('active');
+}
+
+// تطبيق الثيم المحفوظ عند تشغيل الصفحة فوراً
+(function() {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+        document.body.classList.add('dark-mode');
+    }
+})();
 // تبديل اللغة (تغيير الاتجاه فقط)
 function toggleLanguage() {
     const lang = document.getElementById('languageSelect').value;
