@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>delivery-1.9 - Enterprise</title>
+    <title>delivery-1.9</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -2490,107 +2490,201 @@
         }
 
         // --- دالة رسم وتحليل البيانات البيانية (التبويب الجديد) ---
-        async function generateChart() {
-            const startDT = document.getElementById('chartFromDate').value;
-            const endDT = document.getElementById('chartToDate').value;
-            const branchId = document.getElementById('chartBranchSelect').value;
-            
-            if (!startDT || !endDT) return showToast("يرجى تحديد وقت وتاريخ البداية والنهاية للرسم", "error");
+    async function generateChart() {
+    const startDT = document.getElementById('chartFromDate').value;
+    const endDT = document.getElementById('chartToDate').value;
+    const branchId = document.getElementById('chartBranchSelect').value; // معرف الفرع المختار
 
-            document.getElementById('analyticsChartLoading').classList.remove('hidden');
-            
-            const fromTimestamp = new Date(startDT).getTime();
-            const toTimestamp = new Date(endDT).getTime();
-            
-            const dates = []; 
-            let curr = new Date(startDT.split('T')[0]);
-            let endD = new Date(endDT.split('T')[0]);
-            
-            while(curr <= endD) { 
-                dates.push(curr.toISOString().split('T')[0]); 
-                curr.setDate(curr.getDate() + 1); 
-            }
-            
-            let dataPoints = [];
+    if (!startDT || !endDT) return showToast("يرجى تحديد وقت وتاريخ البداية والنهاية للرسم", "error");
 
-            try {
-                const res = await Promise.all(dates.map(d => getDayData(d, d === new Date().toISOString().split('T')[0])));
-                res.forEach(day => {
-                    if(day) {
-                        Object.values(day).forEach(r => {
-                            const rTime = r.timestamp; 
-                            if (rTime >= fromTimestamp && rTime <= toTimestamp) {
-                                let hasAccess = true;
-                                if(currentUser.role === 'admin' && currentUser.adminType === 'branch_manager') {
-                                    if(r.branchId !== currentUser.assignedBranch && r.sourceBranchId !== currentUser.assignedBranch && !(delegates[r.delegateId] && delegates[r.delegateId].branchId === currentUser.assignedBranch)) {
-                                        hasAccess = false;
-                                    }
-                                }
+    document.getElementById('analyticsChartLoading').classList.remove('hidden');
+    const fromTimestamp = new Date(startDT).getTime();
+    const toTimestamp = new Date(endDT).getTime();
 
-                                if (hasAccess) {
-                                    if(branchId && r.branchId !== branchId) return; // الفلترة بفرع محدد
+    let dataPoints = [];
+    const dates = [];
+    let curr = new Date(startDT.split('T')[0]);
+    let endD = new Date(endDT.split('T')[0]);
+
+    while(curr <= endD) {
+        dates.push(curr.toISOString().split('T')[0]);
+        curr.setDate(curr.getDate() + 1);
+    }
+
+    try {
+        const res = await Promise.all(dates.map(d => getDayData(d, d === new Date().toISOString().split('T')[0])));
+        
+        res.forEach(day => {
+            if(day) {
+                Object.values(day).forEach(r => {
+                    const rTime = r.timestamp;
+                    if (rTime >= fromTimestamp && rTime <= toTimestamp) {
+                        let hasAccess = true;
+                        if(currentUser.role === 'admin' && currentUser.adminType === 'branch_manager') {
+                            if(r.branchId !== currentUser.assignedBranch && r.sourceBranchId !== currentUser.assignedBranch && !(delegates[r.delegateId] && delegates[r.delegateId].branchId === currentUser.assignedBranch)) {
+                                hasAccess = false;
+                            }
+                        }
+
+                        if (hasAccess) {
+                            // التعديل الجوهري هنا: التحقق إذا كان الفرع هو المحول منه أو المحول إليه
+                            if(branchId) {
+                                if(r.branchId === branchId || r.sourceBranchId === branchId) {
                                     dataPoints.push(r);
                                 }
+                            } else {
+                                // في حال اختيار الكل
+                                dataPoints.push(r);
                             }
-                        });
+                        }
                     }
                 });
-                
-                // إذا لم يتم تحديد فرع نعرض رسم دائري يوضح توزيع الأوردرات على الفروع
-                // إذا تم تحديد فرع نعرض رسم أعمدة يوضح أداء كل مندوب في هذا الفرع
-                renderAnalyticsChart(dataPoints, branchId ? 'delegate' : 'branch');
-            } catch(e) { 
-                showToast("حدث خطأ أثناء تحميل بيانات الرسم", "error"); 
             }
-            
-            document.getElementById('analyticsChartLoading').classList.add('hidden');
+        });
+
+        // إرسال البيانات والفرع المختار لدالة الرسم البياني المطورة
+        renderAnalyticsChart(dataPoints, branchId);
+
+    } catch(e) {
+        console.error(e);
+        showToast("حدث خطأ أثناء تحميل بيانات الرسم", "error");
+    }
+    document.getElementById('analyticsChartLoading').classList.add('hidden');
+}
+
+    function renderAnalyticsChart(data, selectedBranchId) {
+    const ctx = document.getElementById('mainAnalyticsChart').getContext('2d');
+    const emptyMsg = document.getElementById('analyticsChartEmptyMsg');
+
+    if (reportChartInstance) {
+        reportChartInstance.destroy();
+    }
+
+    if (!data || data.length === 0) {
+        emptyMsg.classList.remove('hidden');
+        emptyMsg.textContent = "لا توجد بيانات متاحة في هذه الفترة للفرع المحدد";
+        return;
+    } else {
+        emptyMsg.classList.add('hidden');
+    }
+
+    let chartType = 'bar';
+    let chartData = {};
+    let chartOptions = {
+        responsive: true,
+        plugins: {
+            legend: { display: true, labels: { font: { family: 'Cairo' } } },
+            tooltip: { bodyFont: { family: 'Cairo' }, titleFont: { family: 'Cairo' } }
         }
+    };
 
-        function renderAnalyticsChart(data, type) {
-            const ctx = document.getElementById('mainAnalyticsChart').getContext('2d');
-            const emptyMsg = document.getElementById('analyticsChartEmptyMsg');
-            
-            if (reportChartInstance) {
-                reportChartInstance.destroy();
+    // الوضع الأول: إذا تم اختيار فرع محدد (إحصائيات احترافية صادرة وواردة ونسب تحويل)
+    if (selectedBranchId) {
+        const branchName = branches[selectedBranchId] ? branches[selectedBranchId].name : 'الفرع المختار';
+        
+        let outboundCounts = {}; // حركات خارجة من هذا الفرع إلى فروع أخرى
+        let inboundCounts = {};  // حركات واردة إلى هذا الفرع من فروع أخرى
+        let totalOutbound = 0;
+
+        data.forEach(r => {
+            const qty = Number(r.quantity) || 1;
+            // حركة صادرة من الفرع المختار
+            if (r.sourceBranchId === selectedBranchId) {
+                const targetName = r.branchName || 'فرع آخر';
+                outboundCounts[targetName] = (outboundCounts[targetName] || 0) + qty;
+                totalOutbound += qty;
             }
-
-            if (!data || data.length === 0) {
-                emptyMsg.classList.remove('hidden');
-                emptyMsg.textContent = "لا توجد بيانات متاحة في هذه الفترة";
-                return;
-            } else {
-                emptyMsg.classList.add('hidden');
+            // حركة واردة إلى الفرع المختار
+            if (r.branchId === selectedBranchId) {
+                // العثور على اسم الفرع المصدر من أوبجكت الفروع لديك
+                const sourceName = branches[r.sourceBranchId] ? branches[r.sourceBranchId].name : 'الإدارة/فرع آخر';
+                inboundCounts[sourceName] = (inboundCounts[sourceName] || 0) + qty;
             }
+        });
 
-            const counts = {};
-            data.forEach(r => {
-                const key = type === 'branch' ? r.branchName : r.delegateName;
-                counts[key] = (counts[key] || 0) + (Number(r.count) || 1);
-            });
+        // دمج كل الفروع التي تم التعامل معها للحصول على Labels موحدة
+        const allInteractedBranches = Array.from(new Set([...Object.keys(outboundCounts), ...Object.keys(inboundCounts)]));
 
-            reportChartInstance = new Chart(ctx, {
-                type: type === 'branch' ? 'doughnut' : 'bar',
-                data: {
-                    labels: Object.keys(counts),
-                    datasets: [{
-                        label: 'عدد الحركات',
-                        data: Object.values(counts),
-                        backgroundColor: ['#1e40af', '#3b82f6', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6', '#06b6d4', '#f97316', '#64748b'],
-                        borderWidth: 1
-                    }]
+        const outboundData = allInteractedBranches.map(b => outboundCounts[b] || 0);
+        const inboundData = allInteractedBranches.map(b => inboundCounts[b] || 0);
+
+        chartData = {
+            labels: allInteractedBranches,
+            datasets: [
+                {
+                    label: `حركات صادرة (من ${branchName})`,
+                    data: outboundData,
+                    backgroundColor: 'rgba(59, 130, 246, 0.75)', // أزرق
+                    borderColor: '#3b82f6',
+                    borderWidth: 1
                 },
-                options: { 
-                    responsive: true, 
-                    maintainAspectRatio: false, 
-                    plugins: { 
-                        legend: { position: type === 'branch' ? 'right' : 'top', labels: { font: { family: 'Cairo', size: 14 } } },
-                        tooltip: { titleFont: { family: 'Cairo' }, bodyFont: { family: 'Cairo' } }
-                    },
-                    scales: type === 'bar' ? { y: { beginAtZero: true } } : {}
+                {
+                    label: `حركات واردة (إلى ${branchName})`,
+                    data: inboundData,
+                    backgroundColor: 'rgba(16, 185, 129, 0.75)', // أخضر
+                    borderColor: '#10b981',
+                    borderWidth: 1
                 }
-            });
-        }
+            ]
+        };
 
+        // إضافة الـ Tooltip الاحترافي لحساب نسبة التحويل
+        chartOptions.plugins.tooltip.callbacks = {
+            label: function(context) {
+                const label = context.dataset.label || '';
+                const value = context.parsed.y || 0;
+                
+                if (context.datasetIndex === 0 && totalOutbound > 0) {
+                    // حساب نسبة تحويل هذا الفرع إلى الفرع المستهدف من إجمالي الحركات الصادرة
+                    const percentage = ((value / totalOutbound) * 100).toFixed(1);
+                    return `${label}: ${value} حركة (${percentage}% من إجمالي صادرات الفرع)`;
+                }
+                return `${label}: ${value} حركة`;
+            }
+        };
+
+    } else {
+        // الوضع الثاني: عند اختيار (الكل) - مقارنة عامة لتوزيع الحركات بين الفروع
+        const branchCounts = {};
+        let totalAll = 0;
+
+        data.forEach(r => {
+            const qty = Number(r.quantity) || 1;
+            const key = r.branchName || 'غير محدد';
+            branchCounts[key] = (branchCounts[key] || 0) + qty;
+            totalAll += qty;
+        });
+
+        chartType = 'doughnut'; // تحويلها لرسم دائري احترافي (Doughnut)
+        chartData = {
+            labels: Object.keys(branchCounts),
+            datasets: [{
+                label: 'إجمالي الحركات المحولة',
+                data: Object.values(branchCounts),
+                backgroundColor: [
+                    '#1e40af', '#3b82f6', '#f59e0b', '#10b981', '#ef4444', 
+                    '#8b5cf6', '#ec4899', '#6366f1', '#14b8a6', '#f97316'
+                ],
+                borderWidth: 1
+            }]
+        };
+
+        chartOptions.plugins.tooltip.callbacks = {
+            label: function(context) {
+                const value = context.raw || 0;
+                const percentage = ((value / totalAll) * 100).toFixed(1);
+                return ` ${context.label}: ${value} حركة (${percentage}%)`;
+            }
+        };
+    }
+
+    // بناء التشارت الجديد بالخيارات الاحترافية
+    reportChartInstance = new Chart(ctx, {
+        type: chartType,
+        data: chartData,
+        options: chartOptions
+    });
+}
         // --- دالة تصدير التقرير إلى ملف إكسيل حقيقي (XLSX) باستخدام SheetJS ---
         function exportReportToExcel() {
             if (!currentReportData || currentReportData.length === 0) {
