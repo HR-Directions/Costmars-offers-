@@ -1672,13 +1672,17 @@
             renderBranchButtons();
         }
 
-        function updateDelegatesUI() {
+                function updateDelegatesUI() {
             const tbody = document.getElementById('delegatesTableBody');
             const selectRecord = document.getElementById('recordDelegate');
             if(tbody) tbody.innerHTML = '';
-            if(selectRecord) selectRecord.innerHTML = '<option value="">-- يرجى اختيار مندوب أولاً --</option>';
+            if(selectRecord) selectRecord.innerHTML = '<option value="">-- يرجى اختيار مندوب --</option>';
 
             const keys = Object.keys(delegates).sort((a,b) => delegates[b].timestamp - delegates[a].timestamp);
+            
+            // مصفوفة لتتبع المناديب المتاحين للفرع الحالي
+            let availableDelegates = []; 
+
             keys.forEach(k => {
                 const d = delegates[k];
                 const branchName = d.branchId && branches[d.branchId] ? branches[d.branchId].name : 'غير محدد';
@@ -1698,10 +1702,18 @@
                     // لا تظهر المندوب في القائمة المنسدلة إذا كانت حالته inactive
                     if (hasAccess && d.status !== 'inactive') {
                         selectRecord.innerHTML += `<option value="${k}">${d.name} (${d.code})</option>`;
+                        availableDelegates.push(k); // إضافة المندوب لقائمة المتاحين
                     }
                 }
             });
-        }
+
+            // --- التحديث الجديد: الاختيار التلقائي إذا كان هناك مندوب واحد فقط متاح ---
+            if (selectRecord && availableDelegates.length === 1) {
+                selectRecord.value = availableDelegates[0]; // اختيار المندوب الوحيد
+                handleDelegateChange(); // تحديث واجهة إجمالي الحركات والأزرار فوراً
+            }
+                }
+        
 
         function renderBranchButtons() {
             const grid = document.getElementById('branchButtonsGrid');
