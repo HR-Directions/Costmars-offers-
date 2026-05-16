@@ -191,13 +191,7 @@
                             <label class="block text-sm font-semibold text-gray-600 mb-2">تاريخ اليوم</label>
                             <input type="date" id="recordDate" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-secondary outline-none transition font-bold text-gray-800" onchange="loadRecords()">
                         </div>
-                        <div class="w-full relative">
-                            <div class="flex justify-between items-center mb-2 border-b border-gray-100 pb-1">
-    <label class="block text-sm font-semibold text-gray-600">اختر المندوب</label>
-    <button onclick="openBranchDelegatesModal()" class="text-[11px] bg-secondary text-white px-2.5 py-1 rounded-md hover:bg-blue-600 transition shadow-sm flex items-center gap-1">
-        <i class="fa-solid fa-users-gear"></i> حالة المناديب
-    </button>
-                            </div>
+                        
                             <select id="recordDelegate" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-secondary outline-none transition font-bold" onchange="handleDelegateChange()">
                                 <option value="">-- يرجى اختيار مندوب --</option>
                             </select>
@@ -761,17 +755,22 @@
         </div>
     </div>
     
-<div id="delegateSelectContainer">
+<div class="w-full relative">
     <label class="block text-sm font-semibold text-gray-600 mb-2">اختر المندوب</label>
     <div class="flex gap-2">
-        <select id="recordDelegate" class="w-full border-gray-300 rounded-lg shadow-sm focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-50 text-sm p-2.5 outline-none bg-white flex-1" required>
-            <option value="">-- اختر المندوب --</option>
+        <select id="recordDelegate" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-secondary outline-none transition font-bold bg-white flex-1" onchange="handleDelegateChange()">
+            <option value="">-- يرجى اختيار مندوب --</option>
         </select>
-        <button type="button" onclick="openBranchDelegatesModal()" class="bg-gray-50 border border-gray-300 text-primary px-4 rounded-lg hover:bg-gray-100 transition shadow-sm flex items-center justify-center" title="إدارة حالة المناديب">
-            <i class="fa-solid fa-user-gear text-lg"></i>
+        <button type="button" onclick="openBranchDelegatesModal()" class="bg-gray-50 border border-gray-300 text-primary px-4 rounded-lg hover:bg-gray-200 transition shadow-sm flex items-center justify-center" title="حضور وانصراف المناديب">
+            <i class="fa-solid fa-users-gear text-xl"></i>
         </button>
     </div>
+    <div id="delegateTotalBox" class="mt-2 text-sm font-bold text-teal-700 hidden bg-teal-50 p-3 rounded-lg border border-teal-200 shadow-inner flex justify-between items-center">
+        <span>إجمالي حركات المندوب:</span>
+        <span id="delegateTotalValue" class="text-xl bg-white px-3 py-1 rounded-md shadow-sm">0</span>
+    </div>
 </div>
+
     
     <script>
         const DB_URL = 'https://story-64520-default-rtdb.firebaseio.com/';
@@ -2074,8 +2073,7 @@
             updateDelegateTotal(); 
         
         }
-
-                        function openBranchDelegatesModal() {
+        function openBranchDelegatesModal() {
             const list = document.getElementById('branchDelegatesList');
             list.innerHTML = '';
             
@@ -2084,7 +2082,7 @@
                 const d = delegates[k];
                 if (currentUser.role === 'branch') return d.branchId === currentUser.id;
                 if (currentUser.role === 'admin' && currentUser.adminType === 'branch_manager') return d.branchId === currentUser.assignedBranch;
-                return true; // الإدارة العامة ترى الجميع
+                return true; 
             });
 
             if(myDelegates.length === 0) {
@@ -2096,9 +2094,9 @@
                     const isInside = d.status !== 'inactive'; 
                     const branchInfo = (currentUser.role === 'admin' && currentUser.adminType !== 'branch_manager') ? `<div class="text-[10px] text-blue-500 mt-1"><i class="fa-solid fa-store ml-1"></i>${branches[d.branchId]?.name || 'غير محدد'}</div>` : '';
                     
-                    // تم تصميم هذا الجزء ليتطابق مع الصورة المرفقة الخاصة بك تماماً
+                    // تصميم الكارت ليطابق الصورة المرفقة
                     list.innerHTML += `
-                        <div class="flex justify-between items-center p-4 bg-white border ${isInside ? 'border-green-200 shadow-sm' : 'border-gray-200 opacity-60'} rounded-xl mb-3 transition-all">
+                        <div class="flex justify-between items-center p-4 bg-white border ${isInside ? 'border-green-400 shadow-sm' : 'border-gray-200 opacity-60'} rounded-xl mb-3 transition-all">
                             
                             <label class="relative inline-flex items-center cursor-pointer">
                                 <input type="checkbox" class="sr-only peer" ${isInside ? 'checked' : ''} onchange="toggleDelegateStatus('${k}', this.checked)">
@@ -2120,7 +2118,32 @@
             }
             
             document.getElementById('branchDelegatesModal').classList.add('active');
-                        }
+        }
+
+        function closeBranchDelegatesModal() {
+            document.getElementById('branchDelegatesModal').classList.remove('active');
+        }
+
+        async function toggleDelegateStatus(delegateId, isInside) {
+            const newStatus = isInside ? 'active' : 'inactive';
+            try {
+                await fetch(`${DB_URL}delegates/${delegateId}.json`, {
+                    method: 'PATCH',
+                    body: JSON.stringify({ status: newStatus })
+                });
+                
+                delegates[delegateId].status = newStatus;
+                updateDelegatesUI(); 
+                openBranchDelegatesModal();
+                
+                showToast(isInside ? "تم تسجيل المندوب متاح (داخل المنظومة)" : "تم إخفاء المندوب (خارج المنظومة)", isInside ? "success" : "warning");
+                logActivity('edit', `قام بتغيير حالة المندوب (${delegates[delegateId].name}) إلى: ${isInside ? 'داخل المنظومة' : 'خارج المنظومة'}`);
+                
+            } catch(e) {
+                showToast("حدث خطأ أثناء تغيير الحالة", "error");
+            }
+        }
+
         
         
 
