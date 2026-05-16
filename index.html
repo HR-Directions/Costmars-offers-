@@ -173,6 +173,35 @@
                         <span id="overdueBadge" class="hidden absolute -top-1 -right-1 bg-red-600 text-white text-[10px] w-4 h-4 flex items-center justify-center rounded-full animate-ping"></span>
                         <span id="overdueBadgeSolid" class="hidden absolute -top-1 -right-1 bg-red-600 text-white text-[10px] w-4 h-4 flex items-center justify-center rounded-full">!</span>
                     </button>
+                    <button onclick="openBranchDelegatesModal()" class="bg-primary hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold shadow transition flex items-center gap-2">
+    <i class="fa-solid fa-users-gear"></i> إدارة حالة المناديب
+</button>
+
+<div id="branchDelegatesModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden opacity-0 transition-opacity duration-300">
+    <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full mx-4 overflow-hidden transform scale-95 transition-transform duration-300">
+        <div class="bg-primary text-white p-4 flex justify-between items-center">
+            <h3 class="text-lg font-bold flex items-center gap-2">
+                <i class="fa-solid fa-users font-bold"></i> حالة مناديب الفرع
+            </h3>
+            <button onclick="closeBranchDelegatesModal()" class="text-white hover:text-gray-200 text-2xl font-bold">&times;</button>
+        </div>
+        <div class="p-6 max-h-[70vh] overflow-y-auto">
+            <table class="w-full text-right border-collapse">
+                <thead>
+                    <tr class="border-b-2 border-gray-200 bg-gray-50 text-gray-700 font-bold text-sm">
+                        <th class="p-3">كود المندوب</th>
+                        <th class="p-3">اسم المندوب</th>
+                        <th class="p-3 text-center">الحالة</th>
+                        <th class="p-3 text-center">الإجراء</th>
+                    </tr>
+                </thead>
+                <tbody id="branchDelegatesTableBody">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
                     <button onclick="switchTab('adminTab')" id="btn-adminTab" class="nav-btn hidden px-4 py-2 rounded-md font-semibold transition-all duration-200 hover:bg-white/20 text-white"><i class="fa-solid fa-gears ml-2"></i>الإدارة</button>
                     
                     <button onclick="openSettingsModal()" class="px-4 py-2 rounded-md font-semibold text-white hover:bg-white/20 transition-all"><i class="fa-solid fa-gear ml-2"></i>الإعدادات</button>
@@ -1655,32 +1684,53 @@
         }
 
         function updateDelegatesUI() {
-            const tbody = document.getElementById('delegatesTableBody');
-            const selectRecord = document.getElementById('recordDelegate');
-            if(tbody) tbody.innerHTML = '';
-            if(selectRecord) selectRecord.innerHTML = '<option value="">-- يرجى اختيار مندوب أولاً --</option>';
+    const tbody = document.getElementById('delegatesTableBody');
+    const selectRecord = document.getElementById('recordDelegate');
+    if(tbody) tbody.innerHTML = '';
+    if(selectRecord) selectRecord.innerHTML = '<option value="">-- يرجى اختيار مندوب أولاً --</option>';
 
-            const keys = Object.keys(delegates).sort((a,b) => delegates[b].timestamp - delegates[a].timestamp);
-            keys.forEach(k => {
-                const d = delegates[k];
-                const branchName = d.branchId && branches[d.branchId] ? branches[d.branchId].name : 'غير محدد';
-                const phoneDisplay = d.phone ? `<a href="tel:${d.phone}" class="text-blue-600 font-semibold hover:underline" dir="ltr">${d.phone}</a>` : '<span class="text-gray-400">-</span>';
-                if(tbody) tbody.innerHTML += `<tr class="border-b hover:bg-gray-50 transition-colors"><td class="p-3"><span class="bg-gray-100 text-gray-600 font-bold px-2 py-1 rounded border">${d.code}</span></td><td class="p-3 font-semibold text-gray-800">${d.name}</td><td class="p-3">${phoneDisplay}</td><td class="p-3 text-gray-500">${branchName}</td><td class="p-3 text-center"><button onclick="openEditModal('delegate', '${k}')" class="text-secondary hover:text-primary bg-blue-50 p-2 rounded-lg transition"><i class="fa-solid fa-pen-to-square"></i></button></td></tr>`;
-                if(selectRecord) {
-                    let hasAccess = false;
-                    if(currentUser.role === 'admin') {
-                        if(currentUser.adminType === 'branch_manager' && d.branchId === currentUser.assignedBranch) hasAccess = true;
-                        if(currentUser.adminType !== 'branch_manager') hasAccess = true;
-                    } else if (currentUser.role === 'branch' && d.branchId === currentUser.id) {
-                        hasAccess = true;
-                    }
-
-                    if (hasAccess) {
-                        selectRecord.innerHTML += `<option value="${k}">${d.name} (${d.code})</option>`;
-                    }
-                }
-            });
+    const keys = Object.keys(delegates).sort((a,b) => delegates[b].timestamp - delegates[a].timestamp);
+    keys.forEach(k => {
+        const d = delegates[k];
+        const branchName = d.branchId && branches[d.branchId] ? branches[d.branchId].name : 'غير محدد';
+        const phoneDisplay = d.phone ? `<a href="tel:${d.phone}" class="text-blue-600 font-semibold hover:underline" dir="ltr">${d.phone}</a>` : '<span class="text-gray-400">-</span>';
+        
+        // 1. رسم جدول إدارة المناديب العام
+        if(tbody) {
+            tbody.innerHTML += `
+                <tr class="border-b hover:bg-gray-50 transition-colors">
+                    <td class="p-3"><span class="bg-gray-100 text-gray-600 font-bold px-2 py-1 rounded border">${d.code}</span></td>
+                    <td class="p-3 font-semibold text-gray-800">${d.name}</td>
+                    <td class="p-3">${phoneDisplay}</td>
+                    <td class="p-3 text-gray-500">${branchName}</td>
+                    <td class="p-3 text-center">
+                        <button onclick="openEditModal('delegate', '${k}')" class="text-secondary hover:text-primary bg-blue-50 p-2 rounded-lg transition">
+                            <i class="fa-solid fa-pen-to-square"></i>
+                        </button>
+                    </td>
+                </tr>`;
         }
+        
+        // 2. تعبئة قائمة اختيار المندوب لإضافة الحركات
+        if(selectRecord) {
+            // التعديل الجديد: إذا كان المندوب خارج المنظومة يتم تخطيه فوراً ولا يضاف لقائمة الاختيار
+            if (d.status === 'outside') return;
+
+            let hasAccess = false;
+            if(currentUser.role === 'admin') {
+                if(currentUser.adminType === 'branch_manager' && d.branchId === currentUser.assignedBranch) hasAccess = true;
+                if(currentUser.adminType !== 'branch_manager') hasAccess = true;
+            } else if (currentUser.role === 'branch' && d.branchId === currentUser.id) {
+                hasAccess = true;
+            }
+
+            if (hasAccess) {
+                selectRecord.innerHTML += `<option value="${k}">${d.name} (${d.code})</option>`;
+            }
+        }
+    });
+        }
+        
 
         function renderBranchButtons() {
             const grid = document.getElementById('branchButtonsGrid');
@@ -2910,6 +2960,102 @@ async function generateReport() {
             }
         }
 
+        // --- دالة فتح نافذة إدارة مناديب الفرع المسجل ---
+function openBranchDelegatesModal() {
+    const modal = document.getElementById('branchDelegatesModal');
+    const tbody = document.getElementById('branchDelegatesTableBody');
+    tbody.innerHTML = '';
+
+    // تحديد معرف الفرع التابع له الحساب الحالي (سواء مدير فرع أو حساب فرع عادي)
+    const currentBranchId = (currentUser.role === 'admin' && currentUser.adminType === 'branch_manager') 
+        ? currentUser.assignedBranch 
+        : currentUser.id;
+
+    let hasDelegates = false;
+
+    // الفلترة وعرض المناديب التابعين لهذا الفرع فقط
+    Object.keys(delegates).forEach(id => {
+        const del = delegates[id];
+        
+        if (del.branchId === currentBranchId) {
+            hasDelegates = true;
+            const currentStatus = del.status || 'inside'; // الافتراضي داخل المنظومة
+            
+            const statusBadge = currentStatus === 'inside' 
+                ? '<span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-bold border border-green-200">داخل المنظومة</span>' 
+                : '<span class="bg-red-100 text-red-800 px-2 py-1 rounded text-xs font-bold border border-red-200">خارج المنظومة</span>';
+
+            const actionButton = currentStatus === 'inside'
+                ? `<button onclick="changeDelegateStatus('${id}', 'outside')" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs font-bold shadow transition">تحويل لخارج المنظومة</button>`
+                : `<button onclick="changeDelegateStatus('${id}', 'inside')" class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-xs font-bold shadow transition">تحويل لداخل المنظومة</button>`;
+
+            tbody.innerHTML += `
+                <tr class="border-b hover:bg-gray-50 transition text-sm">
+                    <td class="p-3 font-mono text-gray-600">${del.code || del.delegateCode || '-'}</td>
+                    <td class="p-3 font-bold text-gray-800">${del.name || del.delegateName}</td>
+                    <td class="p-3 text-center">${statusBadge}</td>
+                    <td class="p-3 text-center">${actionButton}</td>
+                </tr>
+            `;
+        }
+    });
+
+    if (!hasDelegates) {
+        tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-gray-500">لا يوجد مناديب مسجلين لهذا الفرع حالياً</td></tr>';
+    }
+
+    modal.classList.remove('hidden');
+    setTimeout(() => modal.classList.add('opacity-100'), 10);
+}
+
+// --- دالة إغلاق النافذة ---
+function closeBranchDelegatesModal() {
+    const modal = document.getElementById('branchDelegatesModal');
+    modal.classList.remove('opacity-100');
+    setTimeout(() => modal.classList.add('hidden'), 300);
+}
+
+// --- دالة تعديل حالة المندوب في Firebase ---
+async function changeDelegateStatus(delegateId, newStatus) {
+    showLoading();
+    try {
+        // تحديث الحالة في قاعدة البيانات
+        const res = await fetch(`${DB_URL}delegates/${delegateId}.json`, {
+            method: 'PATCH',
+            body: JSON.stringify({ status: newStatus })
+        });
+
+        if (!res.ok) throw new Error("فشل تحديث حالة المندوب");
+
+        // تحديث الحالة محلياً في مصفوفة/كائن المناديب بالكاش
+        if (delegates[delegateId]) {
+            delegates[delegateId].status = newStatus;
+        }
+
+        showToast("تم تحديث حالة المندوب بنجاح", "success");
+        
+        // تسجيل الإجراء في سجل الأنشطة
+        const statusName = newStatus === 'inside' ? 'داخل المنظومة' : 'خارج المنظومة';
+        logActivity('edit', `قام بتغيير حالة المندوب (${delegates[delegateId]?.name || delegateId}) إلى ${statusName}`);
+        
+        // إعادة تحديث القوائم المنسدلة بناءً على الحالات الجديدة فوراً
+        if (typeof fetchInitialData === 'function') {
+            await fetchInitialData(); 
+        } else if (typeof updateJoinDevicesTab === 'function') {
+            // أو الدالة المسؤولة عن تحديث القوائم والواجهات لديك
+        }
+
+        // تحديث الجدول داخل النافذة المنبثقة مباشرة ليرى المستخدم التغيير
+        openBranchDelegatesModal();
+    } catch (e) {
+        showToast("حدث خطأ أثناء محاولة تعديل الحالة", "error");
+        console.error(e);
+    } finally {
+        hideLoading();
+    }
+}
+        
+
         function showSystemAlertModal(text) {
             document.getElementById('systemAlertContent').textContent = text;
             document.getElementById('systemAlertModal').classList.add('active');
@@ -2921,6 +3067,7 @@ async function generateReport() {
             document.getElementById('systemAlertModal').classList.remove('active');
         }
 
+        
     </script>
 </body>
 </html>
