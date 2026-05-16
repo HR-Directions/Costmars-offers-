@@ -760,28 +760,19 @@
             </div>
         </div>
     </div>
-
-                                    <div id="branchDelegatesModal" class="modal">
-        <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md transform transition-all flex flex-col max-h-[85vh]">
-            <div class="flex justify-between items-center mb-4 border-b pb-3">
-                <h2 class="text-xl font-bold text-primary flex items-center">
-                    <i class="fa-solid fa-user-clock ml-2 text-2xl text-secondary"></i> حضور وانصراف المناديب
-                </h2>
-                <button onclick="closeBranchDelegatesModal()" class="text-gray-400 hover:text-red-500 transition-colors bg-gray-100 hover:bg-red-50 rounded-full w-8 h-8 flex items-center justify-center">
-                    <i class="fa-solid fa-xmark text-lg"></i>
-                </button>
-            </div>
-            
-            <p class="text-xs text-gray-500 mb-4 font-semibold">
-                حدد حالة المندوب (داخل المنظومة) ليظهر في قائمة اختيار المناديب، أو (خارج المنظومة) لإخفائه إذا كان غائباً أو انتهى عمله.
-            </p>
-
-            <div id="branchDelegatesList" class="overflow-y-auto pr-1 space-y-3 flex-grow">
-                </div>
-        </div>
-                                    </div>
-                                
-
+    
+<div id="delegateSelectContainer">
+    <label class="block text-sm font-semibold text-gray-600 mb-2">اختر المندوب</label>
+    <div class="flex gap-2">
+        <select id="recordDelegate" class="w-full border-gray-300 rounded-lg shadow-sm focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-50 text-sm p-2.5 outline-none bg-white flex-1" required>
+            <option value="">-- اختر المندوب --</option>
+        </select>
+        <button type="button" onclick="openBranchDelegatesModal()" class="bg-gray-50 border border-gray-300 text-primary px-4 rounded-lg hover:bg-gray-100 transition shadow-sm flex items-center justify-center" title="إدارة حالة المناديب">
+            <i class="fa-solid fa-user-gear text-lg"></i>
+        </button>
+    </div>
+</div>
+    
     <script>
         const DB_URL = 'https://story-64520-default-rtdb.firebaseio.com/';
         let delegates = {}, branches = {}, admins = {}, currentRecords = {};
