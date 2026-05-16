@@ -2518,50 +2518,68 @@
 
         // --- دالة رسم وتحليل البيانات البيانية (التبويب الجديد) ---
         async function generateChart() {
-            const startDT = document.getElementById('chartFromDate').value;
-            const endDT = document.getElementById('chartToDate').value;
-            const branchId = document.getElementById('chartBranchSelect').value;
-            
-            if (!startDT || !endDT) return showToast("يرجى تحديد وقت وتاريخ البداية والنهاية للرسم", "error");
+    const startDT = document.getElementById('chartFromDate').value;
+    const endDT = document.getElementById('chartToDate').value;
+    const branchId = document.getElementById('chartBranchSelect').value; // جلب ID الفرع المختار
+    
+    if (!startDT || !endDT) return showToast("يرجى تحديد وقت وتاريخ البداية والنهاية للرسم", "error");
 
-            document.getElementById('analyticsChartLoading').classList.remove('hidden');
-            
-            const fromTimestamp = new Date(startDT).getTime();
-            const toTimestamp = new Date(endDT).getTime();
-            
-            const dates = []; 
-            let curr = new Date(startDT.split('T')[0]);
-            let endD = new Date(endDT.split('T')[0]);
-            
-            while(curr <= endD) { 
-                dates.push(curr.toISOString().split('T')[0]); 
-                curr.setDate(curr.getDate() + 1); 
-            }
-            
-            let dataPoints = [];
+    document.getElementById('analyticsChartLoading').classList.remove('hidden');
+    
+    const fromTimestamp = new Date(startDT).getTime();
+    const toTimestamp = new Date(endDT).getTime();
+    
+    const dates = []; 
+    let curr = new Date(startDT.split('T')[0]);
+    let endD = new Date(endDT.split('T')[0]);
+    
+    while(curr <= endD) { 
+        dates.push(curr.toISOString().split('T')[0]); 
+        curr.setDate(curr.getDate() + 1); 
+    }
+    
+    let dataPoints = [];
 
-            try {
-                const res = await Promise.all(dates.map(d => getDayData(d, d === new Date().toISOString().split('T')[0])));
-                res.forEach(day => {
-                    if(day) {
-                        Object.values(day).forEach(r => {
-                            const rTime = r.timestamp; 
-                            if (rTime >= fromTimestamp && rTime <= toTimestamp) {
-                                let hasAccess = true;
-                                if(currentUser.role === 'admin' && currentUser.adminType === 'branch_manager') {
-                                    if(r.branchId !== currentUser.assignedBranch && r.sourceBranchId !== currentUser.assignedBranch && !(delegates[r.delegateId] && delegates[r.delegateId].branchId === currentUser.assignedBranch)) {
-                                        hasAccess = false;
-                                    }
-                                }
+    try {
+        const res = await Promise.all(dates.map(d => getDayData(d, d === new Date().toISOString().split('T')[0])));
+        res.forEach(day => {
+            if(day) {
+                Object.values(day).forEach(r => {
+                    const rTime = r.timestamp; 
+                    if (rTime >= fromTimestamp && rTime <= toTimestamp) {
+                        let hasAccess = true;
+                        if(currentUser.role === 'admin' && currentUser.adminType === 'branch_manager') {
+                            if(r.branchId !== currentUser.assignedBranch && r.sourceBranchId !== currentUser.assignedBranch && !(delegates[r.delegateId] && delegates[r.delegateId].branchId === currentUser.assignedBranch)) {
+                                hasAccess = false;
+                            }
+                        }
 
-                                if (hasAccess) {
-                                    if(branchId && r.branchId !== branchId) return; // الفلترة بفرع محدد
+                        if (hasAccess) {
+                            // التعديل السحري هنا: جلب بيانات الفرع المختار سواء كان (محول منه) أو (محول إليه)
+                            if(branchId) {
+                                if(r.branchId === branchId || r.sourceBranchId === branchId) {
                                     dataPoints.push(r);
                                 }
+                            } else {
+                                // في حال اختيار "الكل"
+                                dataPoints.push(r);
                             }
-                        });
+                        }
                     }
                 });
+            }
+        });
+        
+        // 🔥 حل المشكلة: تمرير كود الفرع الحقيقي (branchId) لدالة الرسم بدلاً من الكلمة القديمة
+        renderAnalyticsChart(dataPoints, branchId);
+        
+    } catch(e) { 
+        console.error(e);
+        showToast("حدث خطأ أثناء تحميل بيانات الرسم", "error"); 
+    }
+    
+    document.getElementById('analyticsChartLoading').classList.add('hidden');
+        }
                 
                 // إذا لم يتم تحديد فرع نعرض رسم دائري يوضح توزيع الأوردرات على الفروع
                 // إذا تم تحديد فرع نعرض رسم أعمدة يوضح أداء كل مندوب في هذا الفرع
