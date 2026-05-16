@@ -2653,6 +2653,134 @@
                             }
 
 
+
+        // --- دالة استخراج التقرير المتقدم ---
+async function generateReport() {
+    // 1. جلب قيم البحث من المدخلات
+    const fromDT = document.getElementById('repFromDate').value;
+    const toDT = document.getElementById('repToDate').value;
+    const repDelCode = document.getElementById('repDelCode').value.trim().toLowerCase();
+    const repOrderNum = document.getElementById('repOrderNum').value.trim().toLowerCase();
+
+    // التحقق من إدخال التواريخ
+    if (!fromDT || !toDT) return showToast("يرجى تحديد وقت وتاريخ البداية والنهاية", "error");
+
+    const loadingIndicator = document.getElementById('reportLoading');
+    const tbody = document.getElementById('reportTableBody');
+    
+    loadingIndicator.classList.remove('hidden');
+    tbody.innerHTML = '';
+    currentReportData = []; // تفريغ التقرير الحالي لتجهيزه للتصدير أو الطباعة
+
+    const fromTimestamp = new Date(fromDT).getTime();
+    const toTimestamp = new Date(toDT).getTime();
+
+    // استخراج قائمة التواريخ (الأيام) التي يجب جلب بياناتها بناءً على النطاق الزمني
+    let datesToFetch = [];
+    let curr = new Date(fromDT.split('T')[0]);
+    let endD = new Date(toDT.split('T')[0]);
+    
+    while(curr <= endD) {
+        datesToFetch.push(curr.toISOString().split('T')[0]);
+        curr.setDate(curr.getDate() + 1);
+    }
+
+    let totalMoves = 0; // إجمالي الحركات
+
+    try {
+        // جلب البيانات من قاعدة البيانات (Firebase) لجميع الأيام المحددة
+        const results = await Promise.all(datesToFetch.map(d => getDayData(d, true)));
+        
+        results.forEach((dayData, index) => {
+            if(dayData) {
+                const dateStr = datesToFetch[index];
+                Object.keys(dayData).forEach(k => {
+                    const r = dayData[k];
+                    const rTime = r.timestamp;
+
+                    // فلترة بناءً على الوقت والتاريخ
+                    if (rTime >= fromTimestamp && rTime <= toTimestamp) {
+                        
+                        // فلترة بناءً على كود المندوب ورقم الأوردر (إن وُجدت)
+                        let matchDel = true;
+                        if (repDelCode && (!r.delegateCode || !r.delegateCode.toLowerCase().includes(repDelCode))) matchDel = false;
+                        
+                        let matchOrder = true;
+                        if (repOrderNum && (!r.orderNumber || !r.orderNumber.toLowerCase().includes(repOrderNum))) matchOrder = false;
+
+                        // التحقق من الصلاحيات (حتى لا يرى فرع بيانات فرع آخر)
+                        let hasAccess = false;
+                        if(currentUser.role === 'admin') {
+                            if (currentUser.adminType === 'branch_manager') {
+                                if (r.sourceBranchId === currentUser.assignedBranch || r.branchId === currentUser.assignedBranch || (delegates[r.delegateId] && delegates[r.delegateId].branchId === currentUser.assignedBranch)) hasAccess = true;
+                            } else {
+                                hasAccess = true; 
+                            }
+                        } else {
+                            if(r.sourceBranchId === currentUser.id || r.branchId === currentUser.id || (delegates[r.delegateId] && delegates[r.delegateId].branchId === currentUser.id)) hasAccess = true;
+                        }
+
+                        if (matchDel && matchOrder && hasAccess) {
+                            r.id = k;
+                            r.date = dateStr;
+                            currentReportData.push(r);
+                        }
+                    }
+                });
+            }
+        });
+
+        // ترتيب النتائج من الأحدث للأقدم
+        currentReportData.sort((a,b) => b.timestamp - a.timestamp);
+
+        // رسم البيانات في الجدول
+        if (currentReportData.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" class="p-8 text-center text-gray-500 bg-gray-50"><i class="fa-solid fa-file-excel text-3xl mb-2 text-gray-300 block"></i> لا توجد بيانات مطابقة لهذه الفترة</td></tr>';
+        } else {
+            currentReportData.forEach(r => {
+                const rCount = Number(r.count) || 1;
+                totalMoves += rCount;
+
+                // تنسيق حالة الأوردر
+                let statusBadge = '';
+                if (r.orderNumber) {
+                     statusBadge = r.status === 'delivered' ? '<span class="text-xs bg-green-500 text-white px-2 py-1 rounded shadow-sm">مُسلم</span>' : '<span class="text-xs bg-amber-500 text-white px-2 py-1 rounded shadow-sm">قيد التوصيل</span>';
+                } else {
+                     statusBadge = '<span class="text-xs bg-blue-500 text-white px-2 py-1 rounded shadow-sm">مكتمل</span>';
+                }
+                
+                // تنسيق تفاصيل الأوردر
+                const rTotalValue = (Number(r.orderValue) || 0) + (Number(r.changeAmount) || 0);
+                let orderDetails = r.orderNumber ? `<div class="text-sm font-bold text-gray-700">رقم: ${r.orderNumber}</div><div class="text-xs text-gray-500 mt-1">قيمة: ${rTotalValue} ج.م</div>` : '<span class="text-gray-400">-</span>';
+
+                tbody.innerHTML += `
+                    <tr class="border-b hover:bg-gray-50 transition">
+                        <td class="p-3 text-center"><input type="checkbox" value="${r.id}" data-date="${r.date}" class="w-4 h-4 report-row-checkbox cursor-pointer accent-red-600" onchange="updateBulkDeleteBtn()"></td>
+                        <td class="p-3 text-sm font-semibold">${r.date}<br><span class="text-xs text-gray-500" dir="ltr">${r.time}</span></td>
+                        <td class="p-3 text-sm font-bold text-primary">${r.createdByUserName || 'غير محدد'}</td>
+                        <td class="p-3 text-sm font-bold"><span class="bg-gray-100 px-2 py-0.5 rounded text-xs border border-gray-200 shadow-sm ml-1">${r.delegateCode}</span> ${r.delegateName}</td>
+                        <td class="p-3 font-bold text-gray-800">${r.branchName}</td>
+                        <td class="p-3 text-center"><span class="bg-accent px-2 py-1 text-white font-bold rounded shadow-sm text-xs">x${rCount}</span></td>
+                        <td class="p-3">${orderDetails}</td>
+                        <td class="p-3">${statusBadge}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        // تحديث إجمالي الحساب المستحق (بناءً على حساب 5 جنيه لكل حركة كما هو مبين في دالة الطباعة لديك)
+        const totalCashDue = totalMoves * 5;
+        document.getElementById('reportTotalClicks').innerHTML = `${totalCashDue} <span class="text-2xl font-semibold">ج.م</span> <div class="text-sm text-emerald-100 mt-2 font-semibold">إجمالي الحركات: ${totalMoves} حركة</div>`;
+
+    } catch (e) {
+        showToast("حدث خطأ في استخراج التقرير من قاعدة البيانات", "error");
+        console.error(e);
+    } finally {
+        loadingIndicator.classList.add('hidden');
+        updateBulkDeleteBtn(); // لتحديث حالة زر الحذف الجماعي إذا تم استخراج التقرير من جديد
+    }
+}
+        
         
         // --- دالة تصدير التقرير إلى ملف إكسيل حقيقي (XLSX) باستخدام SheetJS ---
         function exportReportToExcel() {
