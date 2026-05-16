@@ -2104,13 +2104,18 @@
                     // نعتبر المندوب "داخل" افتراضياً إذا لم يتم تعيين حالة له مسبقاً
                     const isInside = d.status !== 'inactive'; 
                     const branchInfo = (currentUser.role === 'admin' && currentUser.adminType !== 'branch_manager') ? `<div class="text-[10px] text-blue-500 mt-0.5"><i class="fa-solid fa-store ml-1"></i>${branches[d.branchId]?.name || 'غير محدد'}</div>` : '';
-                    
                     list.innerHTML += `
-                        <div class="flex justify-between items-center p-3 bg-gray-50 border ${isInside ? 'border-green-200 bg-green-50/30' : 'border-gray-200'} rounded-lg transition-colors">
-                            <div class="flex flex-col">
-                                <span class="font-bold text-gray-800"><span class="bg-white border text-[10px] px-1.5 py-0.5 rounded shadow-sm ml-1 text-gray-500">${d.code}</span>${d.name}</span>
-                                ${branchInfo}
-                            </div>
+    <div class="flex justify-between items-center p-3 bg-white border ${isInside ? 'border-green-200' : 'border-gray-200'} rounded-lg shadow-sm mb-2 transition-all">
+        <div class="flex flex-col">
+            <span class="font-bold text-gray-800 text-sm"><span class="bg-gray-100 border text-[10px] px-1.5 py-0.5 rounded shadow-sm ml-1 text-gray-600">${d.code}</span>${d.name}</span>
+            ${branchInfo}
+        </div>
+        <button onclick="toggleDelegateStatus('${k}', ${!isInside})" class="px-3 py-1.5 rounded-md text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 ${isInside ? 'bg-green-500 text-white hover:bg-green-600' : 'bg-gray-100 text-gray-500 hover:bg-gray-200 border border-gray-200'}">
+            ${isInside ? '<i class="fa-solid fa-check"></i> داخل' : '<i class="fa-solid fa-xmark"></i> خارج'}
+        </button>
+    </div>
+`;
+
                             <label class="relative inline-flex items-center cursor-pointer">
                                 <span class="ml-3 text-xs font-bold ${isInside ? 'text-green-600' : 'text-gray-400'} w-24 text-left">${isInside ? 'داخل المنظومة' : 'خارج المنظومة'}</span>
                                 <input type="checkbox" class="sr-only peer" ${isInside ? 'checked' : ''} onchange="toggleDelegateStatus('${k}', this.checked)">
