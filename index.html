@@ -338,21 +338,34 @@
                             </div>
                         </div>
 
-                        <div id="analyticsSubTab" class="sub-tab-content">
-                            <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-6 relative">
-                                <h2 class="text-xl font-bold text-gray-800 mb-4 border-b pb-2"><i class="fa-solid fa-chart-line ml-2 text-secondary"></i> تحليلات البيانات البصرية</h2>
-                                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-                                    <div><label class="block text-sm font-semibold mb-2 text-gray-600">من تاريخ ووقت</label><input type="datetime-local" id="chartFromDate" class="w-full px-4 py-2 border rounded-lg outline-none focus:border-secondary transition"></div>
-                                    <div><label class="block text-sm font-semibold mb-2 text-gray-600">إلى تاريخ ووقت</label><input type="datetime-local" id="chartToDate" class="w-full px-4 py-2 border rounded-lg outline-none focus:border-secondary transition"></div>
-                                    <div>
-                                        <label class="block text-sm font-semibold mb-2 text-gray-600">تحليل بيانات فرع</label>
-                                        <select id="chartBranchSelect" class="w-full px-4 py-2 border rounded-lg outline-none focus:border-secondary transition font-semibold text-primary bg-blue-50 border-blue-200">
-                                            <option value="">الكل (مقارنة الفروع)</option>
-                                        </select>
-                                    </div>
-                                    <button onclick="generateChart()" class="bg-primary text-white py-2 rounded-lg font-bold h-[42px] hover:bg-blue-800 transition shadow-sm flex items-center justify-center gap-2"><i class="fa-solid fa-chart-pie"></i> رسم البيانات</button>
-                                </div>
-                            </div>
+                        <div id="analyticsStatsContainer" class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 hidden">
+    <div class="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-4 rounded-xl shadow-sm">
+        <div class="text-sm opacity-90 font-semibold">إجمالي الحركات الصادرة</div>
+        <div id="statOutbound" class="text-2xl font-bold mt-1">0</div>
+        <div class="text-xs mt-2 bg-blue-700/30 inline-block px-2 py-1 rounded">نسبة المشاركة: <span id="statOutboundPct">0%</span></div>
+    </div>
+    <div class="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white p-4 rounded-xl shadow-sm">
+        <div class="text-sm opacity-90 font-semibold">إجمالي الحركات الواردة</div>
+        <div id="statInbound" class="text-2xl font-bold mt-1">0</div>
+        <div class="text-xs mt-2 bg-emerald-700/30 inline-block px-2 py-1 rounded">نسبة النمو الميداني: <span id="statInboundPct">0%</span></div>
+    </div>
+    <div class="bg-gradient-to-br from-amber-500 to-amber-600 text-white p-4 rounded-xl shadow-sm">
+        <div class="text-sm opacity-90 font-semibold">معدل التحويل الناجح</div>
+        <div id="statConversionRate" class="text-2xl font-bold mt-1">0%</div>
+        <div class="text-xs mt-2 bg-amber-700/30 inline-block px-2 py-1 rounded">كفاءة التبادل بين الفروع</div>
+    </div>
+    <div class="bg-gradient-to-br from-purple-500 to-purple-600 text-white p-4 rounded-xl shadow-sm">
+        <div class="text-sm opacity-90 font-semibold">الفرع الأكثر تعاملاً معك</div>
+        <div id="statTopPartner" class="text-xl font-bold mt-1 truncate">-</div>
+        <div class="text-xs mt-2 bg-purple-700/30 inline-block px-2 py-1 rounded">أعلى تبادل تجاري</div>
+    </div>
+</div>
+
+<div class="relative min-h-[300px]">
+    <canvas id="mainAnalyticsChart"></canvas>
+    <div id="analyticsChartEmptyMsg" class="hidden text-center text-gray-400 py-10"></div>
+</div>
+
                             
                             <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 min-h-[400px] relative flex flex-col justify-center items-center">
                                 <canvas id="mainAnalyticsChart" class="w-full h-full max-h-[350px]"></canvas>
@@ -2546,71 +2559,181 @@
             document.getElementById('analyticsChartLoading').classList.add('hidden');
         }
 
-        function renderAnalyticsChart(data, type) {
-            const ctx = document.getElementById('mainAnalyticsChart').getContext('2d');
-            const emptyMsg = document.getElementById('analyticsChartEmptyMsg');
-            
-            if (reportChartInstance) {
-                reportChartInstance.destroy();
+        function renderAnalyticsChart(data, selectedBranchId) {
+    const ctx = document.getElementById('mainAnalyticsChart').getContext('2d');
+    const emptyMsg = document.getElementById('analyticsChartEmptyMsg');
+    const statsContainer = document.getElementById('analyticsStatsContainer');
+
+    if (reportChartInstance) { reportChartInstance.destroy(); }
+
+    if (!data || data.length === 0) {
+        emptyMsg.classList.remove('hidden');
+        if(statsContainer) statsContainer.classList.add('hidden');
+        emptyMsg.textContent = "لا توجد بيانات متاحة في هذه الفترة للفرع المحدد";
+        return;
+    } else {
+        emptyMsg.classList.add('hidden');
+        if(statsContainer) statsContainer.classList.remove('hidden');
+    }
+
+    // حساب الإجمالي العام للنظام لأغراض النسب المئوية الكلية
+    let totalSystemQuantity = data.reduce((sum, r) => sum + (Number(r.quantity) || 1), 0);
+
+    let chartType = 'bar';
+    let chartData = {};
+    let chartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: true, labels: { font: { family: 'Cairo', size: 12 } } },
+            tooltip: {
+                backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                titleFont: { family: 'Cairo', size: 14, weight: 'bold' },
+                bodyFont: { family: 'Cairo', size: 13 },
+                padding: 12,
+                cornerRadius: 8,
+                rtl: true,
+                textDirection: 'rtl'
             }
-
-            if (!data || data.length === 0) {
-                emptyMsg.classList.remove('hidden');
-                emptyMsg.textContent = "لا توجد بيانات متاحة في هذه الفترة";
-                return;
-            } else {
-                emptyMsg.classList.add('hidden');
-            }
-
-            const counts = {};
-            data.forEach(r => {
-                const key = type === 'branch' ? r.branchName : r.delegateName;
-                counts[key] = (counts[key] || 0) + (Number(r.count) || 1);
-            });
-
-            reportChartInstance = new Chart(ctx, {
-                type: type === 'branch' ? 'doughnut' : 'bar',
-                data: {
-                    labels: Object.keys(counts),
-                    datasets: [{
-                        label: 'عدد الحركات',
-                        data: Object.values(counts),
-                        backgroundColor: ['#1e40af', '#3b82f6', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6', '#06b6d4', '#f97316', '#64748b'],
-                        borderWidth: 1
-                    }]
-                },
-                options: { 
-                    responsive: true, 
-                    maintainAspectRatio: false, 
-                    plugins: { 
-                        legend: { position: type === 'branch' ? 'right' : 'top', labels: { font: { family: 'Cairo', size: 14 } } },
-                        tooltip: { titleFont: { family: 'Cairo' }, bodyFont: { family: 'Cairo' } }
-                    },
-                    scales: type === 'bar' ? { y: { beginAtZero: true } } : {}
-                }
-            });
+        },
+        scales: {
+            y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { font: { family: 'Cairo' } } },
+            x: { grid: { display: false }, ticks: { font: { family: 'Cairo' } } }
         }
+    };
 
-        // --- دالة تصدير التقرير إلى ملف إكسيل حقيقي (XLSX) باستخدام SheetJS ---
-        function exportReportToExcel() {
-            if (!currentReportData || currentReportData.length === 0) {
-                return showToast("لا توجد بيانات متاحة لتصديرها، يرجى عرض التقرير أولاً", "error");
-            }
+    // 1️⃣ في حال اختيار فرع محدد
+    if (selectedBranchId) {
+        const branchName = branches[selectedBranchId] ? branches[selectedBranchId].name : 'الفرع المحدد';
+        
+        let outboundCounts = {};
+        let inboundCounts = {};
+        let totalOut = 0;
+        let totalIn = 0;
+        let partnerBranches = {}; // لمعرفة الفرع الأكثر تعاملاً
+
+        data.forEach(r => {
+            const qty = Number(r.quantity) || 1;
             
-            // تحضير البيانات للأعمدة والأسماء باللغة العربية
-            const exportData = currentReportData.map(r => ({
-                "التاريخ": r.date,
-                "الوقت": r.time,
-                "المُسجل": r.createdByUserName || 'غير محدد',
-                "المندوب": r.delegateName,
-                "كود المندوب": r.delegateCode,
-                "الفرع المُحول إليه": r.branchName,
-                "الكمية": r.count || 1,
-                "رقم الأوردر": r.orderNumber || '-',
-                "قيمة الأوردر (ج.م)": r.orderValue || '-',
-                "الباقي (ج.م)": r.changeAmount || 0,
-                "الحالة": r.status === 'delivered' ? 'تم التوصيل' : (r.status === 'pending' ? 'قيد التوصيل' : 'مكتمل')
-            }));
+            if (r.sourceBranchId === selectedBranchId) {
+                const targetName = r.branchName || 'فرع آخر';
+                outboundCounts[targetName] = (outboundCounts[targetName] || 0) + qty;
+                partnerBranches[targetName] = (partnerBranches[targetName] || 0) + qty;
+                totalOut += qty;
+            }
+            if (r.branchId === selectedBranchId) {
+                const sourceName = branches[r.sourceBranchId] ? branches[r.sourceBranchId].name : 'الإدارة/فرع آخر';
+                inboundCounts[sourceName] = (inboundCounts[sourceName] || 0) + qty;
+                partnerBranches[sourceName] = (partnerBranches[sourceName] || 0) + qty;
+                totalIn += qty;
+            }
+        });
+
+        const allBranches = Array.from(new Set([...Object.keys(outboundCounts), ...Object.keys(inboundCounts)]));
+        const outboundData = allBranches.map(b => outboundCounts[b] || 0);
+        const inboundData = allBranches.map(b => inboundCounts[b] || 0);
+
+        // حساب الفرع الأكثر تعاملاً
+        let topPartner = '-';
+        let maxPartnerVal = 0;
+        Object.entries(partnerBranches).forEach(([bName, val]) => {
+            if(val > maxPartnerVal) { maxPartnerVal = val; topPartner = bName; }
+        });
+
+        // تحديث الكروت الاحترافية بالنسب المئوية الرقمية
+        document.getElementById('statOutbound').textContent = totalOut;
+        document.getElementById('statInbound').textContent = totalIn;
+        document.getElementById('statOutboundPct').textContent = ((totalOut / (totalSystemQuantity || 1)) * 100).toFixed(1) + '%';
+        document.getElementById('statInboundPct').textContent = ((totalIn / (totalSystemQuantity || 1)) * 100).toFixed(1) + '%';
+        
+        // كفاءة التحويل (نسبة الصادر من إجمالي التعاملات)
+        const totalBranchOps = totalOut + totalIn;
+        document.getElementById('statConversionRate').textContent = totalBranchOps > 0 ? ((totalOut / totalBranchOps) * 100).toFixed(1) + '%' : '0%';
+        document.getElementById('statTopPartner').textContent = topPartner;
+
+        // تجهيز بيانات التشارت (أعمدة صادر ووارد مع حساب نسبتها التفاعلية)
+        chartData = {
+            labels: allBranches,
+            datasets: [
+                {
+                    label: `صادرات الفرع (نسب مئوية مستقلة)`,
+                    data: outboundData,
+                    backgroundColor: 'rgba(59, 130, 246, 0.85)',
+                    borderColor: '#3b82f6',
+                    borderRadius: 6,
+                    borderWidth: 1
+                },
+                {
+                    label: `واردات الفرع`,
+                    data: inboundData,
+                    backgroundColor: 'rgba(16, 185, 129, 0.85)',
+                    borderColor: '#10b981',
+                    borderRadius: 6,
+                    borderWidth: 1
+                }
+            ]
+        };
+
+        // الـ Tooltip التفاعلي لعرض النسب المئوية الفردية لكل عمود
+        chartOptions.plugins.tooltip.callbacks = {
+            label: function(context) {
+                const label = context.dataset.label.split(' ')[0]; // صادر أو وارد
+                const val = context.parsed.y || 0;
+                const totalTarget = context.datasetIndex === 0 ? totalOut : totalIn;
+                const pct = totalTarget > 0 ? ((val / totalTarget) * 100).toFixed(1) : 0;
+                return `🔹 ${label}: ${val} حركة (${pct}% من إجمالي هذا المسار)`;
+            }
+        };
+
+    } else {
+        // 2️⃣ في حال اختيار (الكل) - إحصائيات توزيع الحصص المئوية للسوق بين الفروع
+        const branchCounts = {};
+        data.forEach(r => {
+            const qty = Number(r.quantity) || 1;
+            const key = r.branchName || 'غير محدد';
+            branchCounts[key] = (branchCounts[key] || 0) + qty;
+        });
+
+        // تحديث كروت الأرقام العامة للكل
+        document.getElementById('statOutbound').textContent = data.length;
+        document.getElementById('statInbound').textContent = totalSystemQuantity;
+        document.getElementById('statOutboundPct').textContent = '100%';
+        document.getElementById('statInboundPct').textContent = '100%';
+        document.getElementById('statConversionRate').textContent = '100%';
+        document.getElementById('statTopPartner').textContent = 'جميع الفروع';
+
+        chartType = 'doughnut'; // رسم دائري مجوف احترافي لمقارنة النسب المئوية للحصص
+        chartData = {
+            labels: Object.keys(branchCounts),
+            datasets: [{
+                data: Object.values(branchCounts),
+                backgroundColor: [
+                    '#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', 
+                    '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#475569'
+                ],
+                borderWidth: 2,
+                hoverOffset: 12
+            }]
+        };
+
+        chartOptions.plugins.tooltip.callbacks = {
+            label: function(context) {
+                const val = context.raw || 0;
+                const pct = ((val / totalSystemQuantity) * 100).toFixed(1);
+                return ` 📊 ${context.label}: ${val} أوردر (الحصة: ${pct}%)`;
+            }
+        };
+        // تحسين مظهر الدونات
+        chartOptions.cutout = '65%';
+    }
+
+    // إنشاء الكائن الرسومي الجديد وإخضاع الخصائص الاحترافية له
+    reportChartInstance = new Chart(ctx, {
+        type: chartType,
+        data: chartData,
+        options: chartOptions
+    });
+        }
 
             // إنشاء ورقة العمل (Worksheet)
             const ws = XLSX.utils.json_to_sheet(exportData);
