@@ -1259,7 +1259,8 @@
                                 document.getElementById('reloadNotesContainer').classList.add('hidden');
                             }
                             document.getElementById('forceReloadModal').classList.add('active');
-                            playWarningSound();
+                            playAlertSound();
+                            
                         }
                         
                         if (alertsData.latestMessage?.timestamp > localAlertTimestamp) {
@@ -2912,7 +2913,8 @@ async function generateReport() {
         function showSystemAlertModal(text) {
             document.getElementById('systemAlertContent').textContent = text;
             document.getElementById('systemAlertModal').classList.add('active');
-            playWarningSound();
+            playAlertSound();
+            
         }
 
         function closeSystemAlert() {
